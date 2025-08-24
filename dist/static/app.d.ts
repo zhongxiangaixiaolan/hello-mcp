@@ -19,7 +19,11 @@ declare function submitFeedback(feedbackText: any, shouldCloseAfterSubmit: any):
 declare function initializeMarkdown(): void;
 declare function parseMarkdown(content: any): any;
 declare function applyCodeHighlighting(): void;
+declare function renderMath(text: any, displayMode?: boolean): any;
+declare function processMathInText(text: any): any;
 declare function copyCodeToClipboard(button: any): void;
+declare function toggleMermaidView(mermaidId: any): void;
+declare function downloadMermaidImage(mermaidId: any): void;
 declare function displayWorkSummary(workSummary: any): void;
 declare function addCopyButtonsToCodeBlocks(container: any): void;
 declare function addWorkSummaryStyles(): void;

@@ -821,6 +821,147 @@
             outline: none;
             border-color: #007acc;
         }
+
+        /* 数学公式样式 */
+        .math-display {
+            margin: 16px 0;
+            text-align: center;
+            overflow-x: auto;
+            padding: 8px;
+            background: #2d2d30;
+            border-radius: 6px;
+            border: 1px solid #3e3e42;
+        }
+
+        .math-inline {
+            display: inline;
+            margin: 0 2px;
+        }
+
+        .math-error {
+            color: #f48771;
+            background: #3c1e1e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+        }
+
+        /* KaTeX样式覆盖 */
+        .katex {
+            color: #ffffff !important;
+        }
+
+        .katex .base {
+            color: #ffffff !important;
+        }
+
+        /* Mermaid图表样式 */
+        .mermaid-wrapper {
+            margin: 16px 0;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            background: #1e1e1e;
+            overflow: hidden;
+        }
+
+        .mermaid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .mermaid-label {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mermaid-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mermaid-toggle-btn,
+        .mermaid-download-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mermaid-toggle-btn:hover,
+        .mermaid-download-btn:hover {
+            background: #005a9e;
+            transform: translateY(-1px);
+        }
+
+        .mermaid-content {
+            padding: 16px;
+        }
+
+        .mermaid-diagram {
+            text-align: center;
+            background: white;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 0;
+        }
+
+        .mermaid-diagram .mermaid {
+            background: transparent;
+            border: none;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .mermaid-code {
+            background: #1e1e1e;
+        }
+
+        .mermaid-code .code-block {
+            margin: 0;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+        }
+
+        /* Mermaid图表内部样式优化 */
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .mermaid-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+
+            .mermaid-controls {
+                justify-content: center;
+            }
+
+            .mermaid-toggle-btn,
+            .mermaid-download-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
     </style>
 
     <!-- Markdown解析和代码高亮库 -->
@@ -871,8 +1012,88 @@
                 console.log('✅ highlight.js主CDN加载成功');
             }
         });
+
+        // 加载KaTeX数学公式渲染器
+        function loadKaTeX() {
+            loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js', function(error) {
+                if (error || typeof katex === 'undefined') {
+                    console.warn('KaTeX加载失败，数学公式功能将不可用');
+                } else {
+                    console.log('✅ KaTeX加载成功');
+                    // 加载自动渲染扩展
+                    loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js', function(autoRenderError) {
+                        if (!autoRenderError && typeof renderMathInElement !== 'undefined') {
+                            console.log('✅ KaTeX自动渲染扩展加载成功');
+                        }
+                    });
+                }
+            });
+        }
+
+        // 加载Mermaid图表渲染器
+        function loadMermaid() {
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.innerHTML = `
+                try {
+                    const mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+
+                    // 初始化Mermaid
+                    mermaid.default.initialize({
+                        startOnLoad: true,
+                        theme: 'default',
+                        securityLevel: 'loose',
+                        fontFamily: 'Arial, sans-serif',
+                        flowchart: {
+                            useMaxWidth: true,
+                            htmlLabels: true
+                        }
+                    });
+
+                    // 全局暴露mermaid对象
+                    window.mermaid = mermaid.default;
+
+                    console.log('✅ Mermaid.js加载成功');
+
+                    // 监听DOM变化，自动渲染新的Mermaid图表
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'childList') {
+                                mutation.addedNodes.forEach(function(node) {
+                                    if (node.nodeType === 1) { // Element node
+                                        const mermaidElements = node.querySelectorAll ? node.querySelectorAll('.mermaid') : [];
+                                        if (mermaidElements.length > 0) {
+                                            setTimeout(() => {
+                                                window.mermaid.run();
+                                            }, 100);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                } catch (error) {
+                    console.warn('Mermaid.js加载失败，图表功能将不可用:', error);
+                }
+            `;
+            document.head.appendChild(script);
+        }
+
+        // 延迟加载数学公式和图表库，确保页面基础功能先加载
+        setTimeout(() => {
+            loadKaTeX();
+            loadMermaid();
+        }, 1000);
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/vs2015.min.css">
+
+    <!-- KaTeX数学公式渲染器 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
 </head>
 <body>
     <div class="container">

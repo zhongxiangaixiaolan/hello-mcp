@@ -795,14 +795,10 @@ function initializeMarkdown() {
 
             // 自定义渲染器
             renderer: {
-                // 自定义代码块渲染
+                // 自定义代码块渲染 - 支持Mermaid图表
                 code({ text, lang }) {
                     const language = lang || '';
                     console.log('🔍 代码块渲染 - 语言:', language, 'hljs可用:', typeof hljs !== 'undefined');
-
-                    // 检查hljs是否可用以及语言是否支持
-                    const validLang = language && typeof hljs !== 'undefined' && hljs.getLanguage(language) ? language : '';
-                    console.log('🔍 有效语言:', validLang);
 
                     // 安全转义HTML，防止XSS攻击
                     function escapeHtml(unsafe) {
@@ -813,6 +809,44 @@ function initializeMarkdown() {
                             .replace(/"/g, "&quot;")
                             .replace(/'/g, "&#039;");
                     }
+
+                    // 检查是否是Mermaid图表
+                    if (language === 'mermaid') {
+                        const mermaidId = 'mermaid-' + Math.random().toString(36).substring(2, 11);
+
+                        // 创建Mermaid图表容器
+                        return `<div class="mermaid-wrapper">
+                            <div class="mermaid-header">
+                                <span class="mermaid-label">🎨 Mermaid图表</span>
+                                <div class="mermaid-controls">
+                                    <button class="mermaid-toggle-btn" onclick="toggleMermaidView('${mermaidId}')">
+                                        <span class="toggle-icon">👁️</span>
+                                        <span class="toggle-text">切换视图</span>
+                                    </button>
+                                    <button class="mermaid-download-btn" onclick="downloadMermaidImage('${mermaidId}')">
+                                        <span class="download-icon">💾</span>
+                                        <span class="download-text">下载图片</span>
+                                    </button>
+                                    <button class="copy-code-btn" onclick="copyCodeToClipboard(this)">
+                                        <span class="copy-icon">📋</span>
+                                        <span class="copy-text">复制代码</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mermaid-content" id="${mermaidId}">
+                                <div class="mermaid-diagram" style="display: block;">
+                                    <pre class="mermaid">${text}</pre>
+                                </div>
+                                <div class="mermaid-code" style="display: none;">
+                                    <pre class="code-block"><code class="hljs language-mermaid">${escapeHtml(text)}</code></pre>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    // 普通代码块处理
+                    const validLang = language && typeof hljs !== 'undefined' && hljs.getLanguage(language) ? language : '';
+                    console.log('🔍 有效语言:', validLang);
 
                     // 不在这里进行高亮，而是让hljs.highlightElement()后续处理
                     // 这样可以避免双重高亮和安全问题
@@ -1001,13 +1035,34 @@ function parseMarkdown(content) {
 
     try {
         console.log('🔄 开始解析Markdown...');
-        const result = marked.parse(content);
+
+        // 先处理数学公式，然后解析Markdown
+        const processedContent = processMathInText(content);
+        const result = marked.parse(processedContent);
+
         console.log('✅ Markdown解析成功，结果长度:', result?.length);
         console.log('✅ 解析结果预览:', result?.substring(0, 200));
 
-        // 解析完成后，异步应用代码高亮
+        // 解析完成后，异步应用代码高亮和数学公式渲染
         setTimeout(() => {
             applyCodeHighlighting();
+
+            // 如果KaTeX可用，渲染页面中的数学公式
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ]
+                });
+            }
+
+            // 如果Mermaid可用，渲染图表
+            if (typeof mermaid !== 'undefined') {
+                mermaid.run();
+            }
         }, 100);
 
         return result;
@@ -1044,10 +1099,55 @@ function applyCodeHighlighting() {
     }
 }
 
+// 数学公式渲染函数
+function renderMath(text, displayMode = false) {
+    if (typeof katex === 'undefined') {
+        return `<span class="math-error">KaTeX未加载</span>`;
+    }
+    try {
+        return katex.renderToString(text, {
+            displayMode: displayMode,
+            throwOnError: false,
+            output: 'html',
+            trust: false
+        });
+    } catch (error) {
+        return `<span class="math-error">数学公式错误: ${error.message}</span>`;
+    }
+}
+
+// 处理文本中的数学公式
+function processMathInText(text) {
+    // 处理块级公式 $$...$$
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, formula) => {
+        const mathHtml = renderMath(formula.trim(), true);
+        return `<div class="math-display">${mathHtml}</div>`;
+    });
+
+    // 处理行内公式 $...$（但不处理已经在$$...$$中的）
+    text = text.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (_, formula) => {
+        const mathHtml = renderMath(formula.trim(), false);
+        return `<span class="math-inline">${mathHtml}</span>`;
+    });
+
+    return text;
+}
+
 // 全局代码复制函数
 function copyCodeToClipboard(button) {
-    const codeBlock = button.closest('.code-block-wrapper').querySelector('code');
-    const code = codeBlock.textContent;
+    // 检查是否在Mermaid容器中
+    const mermaidWrapper = button.closest('.mermaid-wrapper');
+    let code;
+
+    if (mermaidWrapper) {
+        // 从Mermaid代码块获取代码
+        const mermaidCodeBlock = mermaidWrapper.querySelector('.mermaid-code code');
+        code = mermaidCodeBlock ? mermaidCodeBlock.textContent : '';
+    } else {
+        // 从普通代码块获取代码
+        const codeBlock = button.closest('.code-block-wrapper').querySelector('code');
+        code = codeBlock ? codeBlock.textContent : '';
+    }
 
     navigator.clipboard.writeText(code).then(() => {
         const icon = button.querySelector('.copy-icon');
@@ -1077,6 +1177,100 @@ function copyCodeToClipboard(button) {
             text.textContent = '复制';
         }, 2000);
     });
+}
+
+// Mermaid图表视图切换函数
+function toggleMermaidView(mermaidId) {
+    const container = document.getElementById(mermaidId);
+    if (!container) return;
+
+    const diagramView = container.querySelector('.mermaid-diagram');
+    const codeView = container.querySelector('.mermaid-code');
+    const toggleBtn = container.parentElement.querySelector('.mermaid-toggle-btn');
+    const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+    const toggleText = toggleBtn.querySelector('.toggle-text');
+
+    if (diagramView.style.display === 'none') {
+        // 切换到图表视图
+        diagramView.style.display = 'block';
+        codeView.style.display = 'none';
+        toggleIcon.textContent = '👁️';
+        toggleText.textContent = '切换视图';
+    } else {
+        // 切换到代码视图
+        diagramView.style.display = 'none';
+        codeView.style.display = 'block';
+        toggleIcon.textContent = '📝';
+        toggleText.textContent = '查看图表';
+    }
+}
+
+// Mermaid图表下载函数
+function downloadMermaidImage(mermaidId) {
+    const container = document.getElementById(mermaidId);
+    if (!container) return;
+
+    const mermaidElement = container.querySelector('.mermaid');
+    if (!mermaidElement) return;
+
+    // 查找渲染后的SVG元素
+    const svgElement = mermaidElement.querySelector('svg');
+    if (!svgElement) {
+        alert('图表尚未渲染完成，请稍后再试');
+        return;
+    }
+
+    try {
+        // 创建Canvas来转换SVG为PNG
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+
+        // 获取SVG尺寸
+        const svgRect = svgElement.getBoundingClientRect();
+        canvas.width = svgRect.width * 2; // 2倍分辨率
+        canvas.height = svgRect.height * 2;
+
+        // 创建图片
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = function() {
+            // 设置白色背景
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制SVG
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // 下载图片
+            canvas.toBlob(function(blob) {
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `mermaid-diagram-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            }, 'image/png');
+
+            URL.revokeObjectURL(url);
+        };
+
+        img.onerror = function() {
+            console.error('图片加载失败');
+            alert('图片下载失败，请重试');
+            URL.revokeObjectURL(url);
+        };
+
+        img.src = url;
+
+    } catch (error) {
+        console.error('下载失败:', error);
+        alert('图片下载失败，请重试');
+    }
 }
 
 // 显示工作汇报内容
