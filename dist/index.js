@@ -1,5 +1,5 @@
 /**
- * MCP Feedback Collector - 主入口文件
+ * Hello MCP - 主入口文件
  */
 // 导出主要类和函数
 export { MCPServer } from './server/mcp-server.js';

@@ -1,5 +1,5 @@
 /**
- * MCP Feedback Collector - 配置管理
+ * Hello MCP - 配置管理
  */
 
 import { config as dotenvConfig } from 'dotenv';

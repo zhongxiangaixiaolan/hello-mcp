@@ -1,5 +1,5 @@
 /**
- * MCP Feedback Collector - MCP服务器实现
+ * Hello MCP - MCP服务器实现
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -24,7 +24,7 @@ export class MCPServer {
 
     // 创建MCP服务器实例
     this.mcpServer = new McpServer({
-      name: 'mcp-feedback-collector',
+      name: 'hello-mcp',
       version: '2.1.3'
     }, {
       capabilities: {

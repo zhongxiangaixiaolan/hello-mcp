@@ -58,77 +58,116 @@ async function loadChatConfig() {
     }
 }
 
-// 初始化应用
-document.addEventListener('DOMContentLoaded', function() {
-    // 加载聊天配置
-    loadChatConfig();
+// 等待库加载完成的函数
+function waitForLibraries(callback, maxAttempts = 50) {
+    let attempts = 0;
 
-    // 获取并显示版本信息
-    fetchVersionInfo();
+    function checkLibraries() {
+        attempts++;
+        const markedLoaded = typeof marked !== 'undefined';
+        const hljsLoaded = typeof hljs !== 'undefined';
 
-    initializeSocket();
+        console.log(`⏳ 检查库加载状态 (${attempts}/${maxAttempts}):`, {
+            marked: markedLoaded,
+            hljs: hljsLoaded
+        });
 
-    // 检查URL参数
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const session = urlParams.get('session');
-
-    console.log('URL参数:', { mode, session });
-
-    if (mode === 'feedback' && session) {
-        // 传统反馈模式，设置会话ID并获取工作汇报
-        currentFeedbackSession = session;
-        console.log('传统模式 - 设置反馈会话ID:', session);
-
-        // 等待WebSocket连接建立后获取工作汇报
-        setTimeout(() => {
-            if (isConnected && socket) {
-                console.log('请求工作汇报数据...');
-                socket.emit('get_work_summary', { feedback_session_id: session });
-            } else {
-                console.log('WebSocket未连接，稍后重试...');
-                setTimeout(() => {
-                    if (isConnected && socket) {
-                        socket.emit('get_work_summary', { feedback_session_id: session });
-                    }
-                }, 1000);
-            }
-        }, 500);
-
-        // 显示反馈标签页
-        showTab('feedback');
-    } else {
-        // 固定URL模式或默认模式
-        console.log('固定URL模式 - 等待会话分配');
-
-        // 等待WebSocket连接建立后请求会话分配
-        setTimeout(() => {
-            if (isConnected && socket) {
-                console.log('请求会话分配...');
-                socket.emit('request_session');
-            } else {
-                console.log('WebSocket未连接，稍后重试...');
-                setTimeout(() => {
-                    if (isConnected && socket) {
-                        socket.emit('request_session');
-                    }
-                }, 1000);
-            }
-        }, 500);
-
-        // 默认显示工作汇报标签页（因为HTML中默认是active的）
-        showTab('feedback');
+        if (markedLoaded && hljsLoaded) {
+            console.log('✅ 所有库已加载，开始初始化应用');
+            callback();
+        } else if (attempts < maxAttempts) {
+            setTimeout(checkLibraries, 100); // 每100ms检查一次
+        } else {
+            console.warn('❌ 部分库加载超时，继续初始化应用');
+            console.warn('库状态:', { marked: markedLoaded, hljs: hljsLoaded });
+            callback(); // 即使部分失败也继续初始化其他功能
+        }
     }
 
-    // 默认启动自动刷新
-    setTimeout(() => {
-        startAutoRefresh();
-    }, 1000); // 延迟1秒启动，确保页面完全加载
+    checkLibraries();
+}
+
+// 初始化应用
+document.addEventListener('DOMContentLoaded', function() {
+
+
+    // 等待所有库加载完成后再初始化
+    waitForLibraries(function() {
+        // 初始化Markdown解析器
+        initializeMarkdown();
+
+        // 加载聊天配置
+        loadChatConfig();
+
+        // 获取并显示版本信息
+        fetchVersionInfo();
+
+        initializeSocket();
+
+        // 检查URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const session = urlParams.get('session');
+
+
+
+        if (mode === 'feedback' && session) {
+            // 传统反馈模式，设置会话ID并获取工作汇报
+            currentFeedbackSession = session;
+
+
+            // 等待WebSocket连接建立后获取工作汇报
+            setTimeout(() => {
+                if (isConnected && socket) {
+
+                    socket.emit('get_work_summary', { feedback_session_id: session });
+                } else {
+
+                    setTimeout(() => {
+                        if (isConnected && socket) {
+                            socket.emit('get_work_summary', { feedback_session_id: session });
+                        }
+                    }, 1000);
+                }
+            }, 500);
+
+            // 显示反馈标签页
+            showTab('feedback');
+        } else {
+            // 固定URL模式或默认模式
+
+
+            // 等待WebSocket连接建立后请求会话分配
+            setTimeout(() => {
+                if (isConnected && socket) {
+
+                    socket.emit('request_session');
+                } else {
+
+                    setTimeout(() => {
+                        if (isConnected && socket) {
+                            socket.emit('request_session');
+                        }
+                    }, 1000);
+                }
+            }, 500);
+
+            // 默认显示工作汇报标签页（因为HTML中默认是active的）
+            showTab('feedback');
+        }
+
+        // 默认启动自动刷新
+        setTimeout(() => {
+            startAutoRefresh();
+        }, 1000); // 延迟1秒启动，确保页面完全加载
+
+        console.log('✅ 应用初始化完成');
+    });
 });
 
 // 初始化WebSocket连接
 function initializeSocket() {
-    console.log('初始化Socket.IO连接...');
+
 
     socket = io({
         transports: ['websocket', 'polling'],
@@ -141,13 +180,13 @@ function initializeSocket() {
     socket.on('connect', function() {
         isConnected = true;
         updateConnectionStatus('connected', '已连接');
-        console.log('WebSocket连接成功, ID:', socket.id);
+
     });
 
-    socket.on('disconnect', function(reason) {
+    socket.on('disconnect', function() {
         isConnected = false;
         updateConnectionStatus('disconnected', '连接断开');
-        console.log('WebSocket连接断开, 原因:', reason);
+
     });
 
     socket.on('connect_error', function(error) {
@@ -553,7 +592,7 @@ const QUICK_PHRASE = `
 
 Whenever you want to ask a question, always call the MCP .
 
-Whenever you're about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user's feedback is empty, then end the request. mcp-feedback-collector.collect_feedback`;
+Whenever you're about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user's feedback is empty, then end the request. hello-mcp.collect_feedback`;
 
 // 提交反馈
 document.getElementById('feedback-form').addEventListener('submit', function(e) {
@@ -743,12 +782,309 @@ function submitFeedback(feedbackText, shouldCloseAfterSubmit) {
 
 
 
+// Markdown解析配置
+function initializeMarkdown() {
+    if (typeof marked !== 'undefined') {
+
+        // 使用marked.use()配置基础选项和自定义渲染器
+        marked.use({
+            // 基础选项
+            breaks: true,        // 支持换行
+            gfm: true,          // GitHub Flavored Markdown
+            pedantic: false,    // 不使用严格模式
+
+            // 自定义渲染器
+            renderer: {
+                // 自定义代码块渲染
+                code({ text, lang }) {
+                    const language = lang || '';
+                    console.log('🔍 代码块渲染 - 语言:', language, 'hljs可用:', typeof hljs !== 'undefined');
+
+                    // 检查hljs是否可用以及语言是否支持
+                    const validLang = language && typeof hljs !== 'undefined' && hljs.getLanguage(language) ? language : '';
+                    console.log('🔍 有效语言:', validLang);
+
+                    // 安全转义HTML，防止XSS攻击
+                    function escapeHtml(unsafe) {
+                        return unsafe
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/"/g, "&quot;")
+                            .replace(/'/g, "&#039;");
+                    }
+
+                    // 不在这里进行高亮，而是让hljs.highlightElement()后续处理
+                    // 这样可以避免双重高亮和安全问题
+                    const escapedText = escapeHtml(text);
+                    console.log('🔍 代码块将由hljs.highlightElement()处理，语言:', validLang);
+
+                    return `<div class="code-block-wrapper">
+                        <div class="code-block-header">
+                            <span class="code-language">${validLang || 'text'}</span>
+                            <button class="copy-code-btn" onclick="copyCodeToClipboard(this)">
+                                <span class="copy-icon">📋</span>
+                                <span class="copy-text">复制</span>
+                            </button>
+                        </div>
+                        <pre class="code-block"><code class="language-${validLang || 'text'}">${escapedText}</code></pre>
+                    </div>`;
+                },
+
+                // 自定义表格渲染
+                table({ header, rows, align }) {
+                    let headerHtml = '';
+                    let bodyHtml = '';
+
+                    // 渲染表头
+                    if (header && header.length > 0) {
+                        const headerCells = header.map((cell, index) => {
+                            const content = this.parser.parseInline(cell.tokens || []);
+                            const alignStyle = align && align[index] ? ` style="text-align: ${align[index]}"` : '';
+                            return `<th${alignStyle}>${content}</th>`;
+                        }).join('');
+                        headerHtml = `<tr>${headerCells}</tr>`;
+                    }
+
+                    // 渲染表体
+                    if (rows && rows.length > 0) {
+                        bodyHtml = rows.map(row => {
+                            const cells = row.map((cell, index) => {
+                                const content = this.parser.parseInline(cell.tokens || []);
+                                const alignStyle = align && align[index] ? ` style="text-align: ${align[index]}"` : '';
+                                return `<td${alignStyle}>${content}</td>`;
+                            }).join('');
+                            return `<tr>${cells}</tr>`;
+                        }).join('');
+                    }
+
+                    return `<div class="table-wrapper">
+                        <table class="markdown-table">
+                            <thead>${headerHtml}</thead>
+                            <tbody>${bodyHtml}</tbody>
+                        </table>
+                    </div>`;
+                },
+
+                // 自定义引用块渲染
+                blockquote({ tokens }) {
+                    const body = this.parser.parse(tokens || []);
+                    return `<blockquote class="markdown-blockquote">${body}</blockquote>`;
+                },
+
+                // 自定义列表渲染
+                list({ ordered, start, items }) {
+                    const type = ordered ? 'ol' : 'ul';
+                    const startatt = (ordered && start !== 1) ? ` start="${start}"` : '';
+
+                    // 直接处理items数组，不调用this.listitem
+                    const itemsHtml = items.map(item => {
+                        let content = this.parser.parse(item.tokens || []);
+
+                        // 处理任务列表
+                        if (item.task) {
+                            const checkedAttr = item.checked ? 'checked' : '';
+                            content = `<input type="checkbox" ${checkedAttr} disabled class="markdown-checkbox"> ${content}`;
+                        }
+
+                        return `<li class="markdown-list-item">${content}</li>`;
+                    }).join('');
+
+                    return `<${type}${startatt} class="markdown-list">${itemsHtml}</${type}>`;
+                },
+
+                // 自定义列表项渲染
+                listitem({ tokens, task, checked }) {
+                    let content = this.parser.parse(tokens || []);
+
+                    // 处理任务列表
+                    if (task) {
+                        const checkedAttr = checked ? 'checked' : '';
+                        content = `<input type="checkbox" ${checkedAttr} disabled class="markdown-checkbox"> ${content}`;
+                    }
+
+                    return `<li class="markdown-list-item">${content}</li>`;
+                },
+
+                // 自定义标题渲染
+                heading({ tokens, depth }) {
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<h${depth} class="markdown-heading markdown-h${depth}">${text}</h${depth}>`;
+                },
+
+                // 自定义段落渲染
+                paragraph({ tokens }) {
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<p class="markdown-paragraph">${text}</p>`;
+                },
+
+                // 自定义强调渲染
+                strong({ tokens }) {
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<strong class="markdown-strong">${text}</strong>`;
+                },
+
+                // 自定义斜体渲染
+                em({ tokens }) {
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<em class="markdown-em">${text}</em>`;
+                },
+
+                // 自定义行内代码渲染
+                codespan({ text }) {
+                    return `<code class="markdown-codespan">${text}</code>`;
+                },
+
+                // 自定义链接渲染
+                link({ href, title, tokens }) {
+                    const url = href || '';
+                    const titleAttr = title ? ` title="${title}"` : '';
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<a href="${url}"${titleAttr} class="markdown-link">${text}</a>`;
+                },
+
+                // 自定义图片渲染
+                image({ href, text, title }) {
+                    const src = href || '';
+                    const alt = text || '';
+                    const titleAttr = title ? ` title="${title}"` : '';
+                    return `<img src="${src}" alt="${alt}"${titleAttr} class="markdown-image">`;
+                },
+
+                // 自定义分隔线渲染
+                hr() {
+                    return '<hr class="markdown-hr">';
+                },
+
+                // 自定义换行渲染
+                br() {
+                    return '<br class="markdown-br">';
+                },
+
+                // 自定义删除线渲染
+                del({ tokens }) {
+                    const text = this.parser.parseInline(tokens || []);
+                    return `<del class="markdown-del">${text}</del>`;
+                },
+
+                // 自定义文本渲染
+                text({ text }) {
+                    return text || '';
+                },
+
+                // 自定义HTML渲染
+                html({ text }) {
+                    return text || '';
+                },
+
+                // 自定义空白渲染
+                space() {
+                    return '';
+                }
+            }
+        });
+
+    } else {
+        console.warn('Marked库未加载，Markdown功能将不可用');
+    }
+}
+
+// 解析Markdown内容
+function parseMarkdown(content) {
+    console.log('parseMarkdown 被调用，内容长度:', content?.length);
+    console.log('parseMarkdown 内容预览:', content?.substring(0, 100));
+
+    if (typeof marked === 'undefined') {
+        console.warn('❌ Marked库未加载，使用纯文本显示');
+        return content.replace(/\n/g, '<br>');
+    }
+
+    try {
+        console.log('🔄 开始解析Markdown...');
+        const result = marked.parse(content);
+        console.log('✅ Markdown解析成功，结果长度:', result?.length);
+        console.log('✅ 解析结果预览:', result?.substring(0, 200));
+
+        // 解析完成后，异步应用代码高亮
+        setTimeout(() => {
+            applyCodeHighlighting();
+        }, 100);
+
+        return result;
+    } catch (error) {
+        console.error('❌ Markdown解析失败:', error);
+        return content.replace(/\n/g, '<br>');
+    }
+}
+
+// 应用代码高亮
+function applyCodeHighlighting() {
+    if (typeof hljs !== 'undefined') {
+        console.log('🎨 开始应用代码高亮...');
+        try {
+            // 只对未高亮的代码块应用高亮，避免重复处理
+            const codeBlocks = document.querySelectorAll('pre code:not([data-highlighted])');
+            console.log(`🔍 找到 ${codeBlocks.length} 个未高亮的代码块`);
+
+            codeBlocks.forEach((block, index) => {
+                try {
+                    hljs.highlightElement(block);
+                    console.log(`✅ 代码块 ${index + 1} 高亮成功`);
+                } catch (error) {
+                    console.warn(`❌ 代码块 ${index + 1} 高亮失败:`, error);
+                }
+            });
+
+            console.log('✅ 代码高亮应用完成');
+        } catch (error) {
+            console.warn('❌ 代码高亮应用失败:', error);
+        }
+    } else {
+        console.warn('❌ hljs未加载，无法应用代码高亮');
+    }
+}
+
+// 全局代码复制函数
+function copyCodeToClipboard(button) {
+    const codeBlock = button.closest('.code-block-wrapper').querySelector('code');
+    const code = codeBlock.textContent;
+
+    navigator.clipboard.writeText(code).then(() => {
+        const icon = button.querySelector('.copy-icon');
+        const text = button.querySelector('.copy-text');
+
+        // 显示成功状态
+        icon.textContent = '✅';
+        text.textContent = '已复制';
+        button.classList.add('copied');
+
+        // 2秒后恢复
+        setTimeout(() => {
+            icon.textContent = '📋';
+            text.textContent = '复制';
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('复制失败:', err);
+        const icon = button.querySelector('.copy-icon');
+        const text = button.querySelector('.copy-text');
+
+        icon.textContent = '❌';
+        text.textContent = '失败';
+
+        setTimeout(() => {
+            icon.textContent = '📋';
+            text.textContent = '复制';
+        }, 2000);
+    });
+}
+
 // 显示工作汇报内容
 function displayWorkSummary(workSummary) {
-    console.log('displayWorkSummary 被调用:', workSummary);
+
 
     if (!workSummary || workSummary.trim() === '') {
-        console.log('工作汇报内容为空');
+
         return;
     }
 
@@ -771,6 +1107,9 @@ function displayWorkSummary(workSummary) {
         existingCard.remove();
     }
 
+    // 解析Markdown内容
+    const parsedContent = parseMarkdown(workSummary);
+
     // 创建AI工作汇报卡片
     const aiReportCard = document.createElement('div');
     aiReportCard.className = 'report-card ai-work-report';
@@ -783,7 +1122,7 @@ function displayWorkSummary(workSummary) {
             <div class="card-subtitle">刚刚完成</div>
         </div>
         <div class="card-body">
-            <div class="work-summary-content">${workSummary.replace(/\n/g, '<br>')}</div>
+            <div class="work-summary-content">${parsedContent}</div>
         </div>
     `;
 
@@ -795,30 +1134,471 @@ function displayWorkSummary(workSummary) {
         reportContent.appendChild(aiReportCard);
     }
 
-    console.log('AI工作汇报卡片已添加');
+
+
+    // 为代码块添加复制功能
+    addCopyButtonsToCodeBlocks(aiReportCard);
 
     // 添加样式（只添加一次）
     if (!document.querySelector('#work-summary-styles')) {
-        const style = document.createElement('style');
-        style.id = 'work-summary-styles';
-        style.textContent = `
-            .work-summary-content {
-                color: #cccccc;
-                line-height: 1.6;
-                font-size: 13px;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                background: #1e1e1e;
-                padding: 12px;
-                border-radius: 4px;
-                border: 1px solid #3e3e42;
-            }
-            .ai-work-report {
-                border-left: 3px solid #4ec9b0;
-            }
-        `;
-        document.head.appendChild(style);
+        addWorkSummaryStyles();
     }
+}
+
+// 为代码块添加复制按钮
+function addCopyButtonsToCodeBlocks(container) {
+    const codeBlocks = container.querySelectorAll('pre code');
+
+    codeBlocks.forEach((codeBlock) => {
+        const pre = codeBlock.parentElement;
+
+        // 避免重复添加复制按钮
+        if (pre.querySelector('.copy-button')) {
+            return;
+        }
+
+        // 创建复制按钮
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.innerHTML = '📋 复制';
+        copyButton.title = '复制代码';
+
+        // 添加点击事件
+        copyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(codeBlock.textContent);
+                copyButton.innerHTML = '✅ 已复制';
+                copyButton.style.background = '#4ec9b0';
+
+                setTimeout(() => {
+                    copyButton.innerHTML = '📋 复制';
+                    copyButton.style.background = '';
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                copyButton.innerHTML = '❌ 复制失败';
+                setTimeout(() => {
+                    copyButton.innerHTML = '📋 复制';
+                }, 2000);
+            }
+        });
+
+        // 将按钮添加到pre元素
+        pre.style.position = 'relative';
+        pre.appendChild(copyButton);
+    });
+}
+
+// 添加工作汇报样式
+function addWorkSummaryStyles() {
+    const style = document.createElement('style');
+    style.id = 'work-summary-styles';
+    style.textContent = `
+        .work-summary-content {
+            color: #cccccc;
+            line-height: 1.6;
+            font-size: 14px;
+            background: #1e1e1e;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #3e3e42;
+        }
+
+        .ai-work-report {
+            border-left: 3px solid #4ec9b0;
+        }
+
+        /* 标题样式 */
+        .work-summary-content h1,
+        .work-summary-content h2,
+        .work-summary-content h3,
+        .work-summary-content h4,
+        .work-summary-content h5,
+        .work-summary-content h6 {
+            color: #ffffff;
+            margin: 20px 0 12px 0;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .work-summary-content h1 {
+            font-size: 1.8em;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 8px;
+        }
+
+        .work-summary-content h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #3e3e42;
+            padding-bottom: 6px;
+        }
+
+        .work-summary-content h3 {
+            font-size: 1.3em;
+            color: #4ec9b0;
+        }
+
+        .work-summary-content h4 {
+            font-size: 1.1em;
+            color: #569cd6;
+        }
+
+        .work-summary-content h1 { font-size: 1.5em; border-bottom: 1px solid #3e3e42; padding-bottom: 8px; }
+        .work-summary-content h2 { font-size: 1.3em; }
+        .work-summary-content h3 { font-size: 1.1em; }
+
+        .work-summary-content p {
+            margin: 8px 0;
+        }
+
+        .work-summary-content ul,
+        .work-summary-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .work-summary-content li {
+            margin: 4px 0;
+        }
+
+        .work-summary-content blockquote {
+            border-left: 3px solid #007acc;
+            margin: 8px 0;
+            padding: 8px 16px;
+            background: #2d2d30;
+            border-radius: 4px;
+        }
+
+        .work-summary-content code {
+            background: #2d2d30;
+            color: #f8f8f2;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .work-summary-content pre {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .work-summary-content pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* 复制按钮样式 */
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .copy-button:hover {
+            background: #005a9e;
+            transform: scale(1.05);
+        }
+
+        .copy-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 表格样式 */
+        .work-summary-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+            background: #2d2d30;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .work-summary-content th,
+        .work-summary-content td {
+            border: 1px solid #3e3e42;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .work-summary-content th {
+            background: #3e3e42;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* 链接样式 */
+        .work-summary-content a {
+            color: #4ec9b0;
+            text-decoration: none;
+        }
+
+        .work-summary-content a:hover {
+            color: #6ed3b7;
+            text-decoration: underline;
+        }
+
+        /* 强调样式 */
+        .work-summary-content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .work-summary-content em {
+            color: #f8f8f2;
+            font-style: italic;
+        }
+
+        /* 分隔线样式 */
+        .work-summary-content hr {
+            border: none;
+            border-top: 1px solid #3e3e42;
+            margin: 16px 0;
+        }
+
+        /* 新增：增强代码块样式 */
+        .work-summary-content .code-block-wrapper {
+            margin: 16px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #3e3e42;
+            background: #2d2d30;
+        }
+
+        .work-summary-content .code-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .work-summary-content .code-language {
+            color: #4ec9b0;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .work-summary-content .copy-code-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #3e3e42;
+            color: #cccccc;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .work-summary-content .copy-code-btn:hover {
+            background: #4e4e52;
+            transform: translateY(-1px);
+        }
+
+        .work-summary-content .copy-code-btn.copied {
+            background: #4ec9b0;
+            color: #1e1e1e;
+        }
+
+        .work-summary-content .code-block {
+            margin: 0;
+            padding: 16px;
+            background: #2d2d30;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .work-summary-content .code-block code {
+            background: none;
+            padding: 0;
+            border: none;
+            color: inherit;
+        }
+
+        /* 增强表格样式 */
+        .work-summary-content .table-wrapper {
+            margin: 16px 0;
+            overflow-x: auto;
+            border-radius: 6px;
+            border: 1px solid #3e3e42;
+        }
+
+        .work-summary-content .markdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #2d2d30;
+        }
+
+        .work-summary-content .markdown-table th,
+        .work-summary-content .markdown-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .work-summary-content .markdown-table th {
+            background: #252526;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .work-summary-content .markdown-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 增强引用块样式 */
+        .work-summary-content .markdown-blockquote {
+            border-left: 4px solid #007acc;
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: rgba(0, 122, 204, 0.1);
+            color: #cccccc;
+            font-style: italic;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 增强列表样式 */
+        .work-summary-content .markdown-list {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .work-summary-content .markdown-list li {
+            margin: 6px 0;
+            color: #cccccc;
+            line-height: 1.6;
+        }
+
+        .work-summary-content .markdown-list li::marker {
+            color: #4ec9b0;
+        }
+
+        /* 复选框列表样式 */
+        .work-summary-content input[type="checkbox"] {
+            margin-right: 8px;
+            accent-color: #4ec9b0;
+        }
+
+        /* 删除线样式 */
+        .work-summary-content .markdown-del {
+            text-decoration: line-through;
+            color: #969696;
+        }
+
+        /* 图片样式 */
+        .work-summary-content .markdown-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 8px 0;
+            border: 1px solid #3e3e42;
+        }
+
+        /* 分隔线样式 */
+        .work-summary-content .markdown-hr {
+            border: none;
+            border-top: 2px solid #3e3e42;
+            margin: 24px 0;
+            background: none;
+        }
+
+        /* 标题样式 */
+        .work-summary-content .markdown-heading {
+            margin: 20px 0 12px 0;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .work-summary-content .markdown-h1 {
+            font-size: 2em;
+            color: #ffffff;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 8px;
+        }
+
+        .work-summary-content .markdown-h2 {
+            font-size: 1.5em;
+            color: #ffffff;
+            border-bottom: 1px solid #3e3e42;
+            padding-bottom: 4px;
+        }
+
+        .work-summary-content .markdown-h3 {
+            font-size: 1.25em;
+            color: #ffffff;
+        }
+
+        .work-summary-content .markdown-h4 {
+            font-size: 1.1em;
+            color: #cccccc;
+        }
+
+        .work-summary-content .markdown-h5 {
+            font-size: 1em;
+            color: #cccccc;
+        }
+
+        .work-summary-content .markdown-h6 {
+            font-size: 0.9em;
+            color: #969696;
+        }
+
+        /* 段落样式 */
+        .work-summary-content .markdown-paragraph {
+            margin: 12px 0;
+            line-height: 1.6;
+        }
+
+        /* 链接样式 */
+        .work-summary-content .markdown-link {
+            color: #4fc3f7;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .work-summary-content .markdown-link:hover {
+            color: #81d4fa;
+            border-bottom-color: #4fc3f7;
+        }
+
+        /* 强调样式 */
+        .work-summary-content .markdown-strong {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .work-summary-content .markdown-em {
+            font-style: italic;
+            color: #e1e1e1;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // ==================== 工作汇报刷新功能 ====================

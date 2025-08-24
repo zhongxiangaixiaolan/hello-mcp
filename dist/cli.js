@@ -113,13 +113,13 @@ async function healthCheck() {
 }
 // 配置CLI命令
 program
-    .name('mcp-feedback-collector')
-    .description('基于Node.js的MCP反馈收集器')
+    .name('hello-mcp')
+    .description('基于Node.js的MCP工具')
     .version(VERSION);
 // 主命令 - 启动服务器
 program
     .command('start', { isDefault: true })
-    .description('启动MCP反馈收集器')
+    .description('启动MCP工具')
     .option('-p, --port <number>', '指定Web服务器端口', parseInt)
     .option('-w, --web', '仅启动Web模式（不启动MCP服务器）')
     .option('-c, --config <path>', '指定配置文件路径')

@@ -1,4 +1,5 @@
 declare function loadChatConfig(): Promise<boolean>;
+declare function waitForLibraries(callback: any, maxAttempts?: number): void;
 declare function initializeSocket(): void;
 declare function updateConnectionStatus(status: any, text: any): void;
 declare function showStatusMessage(type: any, message: any, autoRemove?: boolean): HTMLDivElement;
@@ -15,7 +16,13 @@ declare function clearFeedbackForm(): void;
 declare function showSubmitConfirmDialog(feedbackText: any): void;
 declare function hideSubmitConfirmDialog(): void;
 declare function submitFeedback(feedbackText: any, shouldCloseAfterSubmit: any): void;
+declare function initializeMarkdown(): void;
+declare function parseMarkdown(content: any): any;
+declare function applyCodeHighlighting(): void;
+declare function copyCodeToClipboard(button: any): void;
 declare function displayWorkSummary(workSummary: any): void;
+declare function addCopyButtonsToCodeBlocks(container: any): void;
+declare function addWorkSummaryStyles(): void;
 /**
  * 显示刷新状态
  */
@@ -115,5 +122,5 @@ declare let sessionTimeoutDuration: number;
 declare let autoSubmitWarningShown: boolean;
 declare let timeoutWarningId: null;
 declare let countdownIntervalId: null;
-declare const QUICK_PHRASE: "\n\n---\n\nWhenever you want to ask a question, always call the MCP .\n\nWhenever you're about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user's feedback is empty, then end the request. mcp-feedback-collector.collect_feedback";
+declare const QUICK_PHRASE: "\n\n---\n\nWhenever you want to ask a question, always call the MCP .\n\nWhenever you're about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user's feedback is empty, then end the request. hello-mcp.collect_feedback";
 //# sourceMappingURL=app.d.ts.map

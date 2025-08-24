@@ -1,5 +1,5 @@
 /**
- * MCP Feedback Collector - MCP服务器实现
+ * Hello MCP - MCP服务器实现
  */
 import { Config } from '../types/index.js';
 /**

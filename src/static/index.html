@@ -822,6 +822,57 @@
             border-color: #007acc;
         }
     </style>
+
+    <!-- Markdown解析和代码高亮库 -->
+    <script>
+        // 现代化的动态脚本加载方案
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = function() {
+                if (callback) callback(new Error('Script load failed'));
+            };
+            document.head.appendChild(script);
+        }
+
+        // 加载marked.js - 使用官方推荐的CDN路径
+        loadScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js', function(error) {
+            if (error || typeof marked === 'undefined') {
+                loadScript('https://unpkg.com/marked/marked.min.js', function(error2) {
+                    if (error2 || typeof marked === 'undefined') {
+                        loadScript('https://cdnjs.cloudflare.com/ajax/libs/marked/16.2.0/marked.min.js', function(error3) {
+                            // 静默处理，不输出错误日志
+                        });
+                    }
+                });
+            }
+        });
+
+        // 加载highlight.js - 使用统一版本11.11.1
+        loadScript('https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js', function(error) {
+            if (error || typeof hljs === 'undefined') {
+                console.log('主CDN加载失败，尝试备用CDN...');
+                loadScript('https://unpkg.com/highlight.js@11.11.1/lib/highlight.min.js', function(error2) {
+                    if (error2 || typeof hljs === 'undefined') {
+                        console.log('备用CDN加载失败，尝试第三个CDN...');
+                        loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js', function(error3) {
+                            if (error3 || typeof hljs === 'undefined') {
+                                console.error('所有highlight.js CDN都加载失败！');
+                            } else {
+                                console.log('✅ highlight.js第三个CDN加载成功');
+                            }
+                        });
+                    } else {
+                        console.log('✅ highlight.js备用CDN加载成功');
+                    }
+                });
+            } else {
+                console.log('✅ highlight.js主CDN加载成功');
+            }
+        });
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/vs2015.min.css">
 </head>
 <body>
     <div class="container">
@@ -852,7 +903,6 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('report')">📋 工作汇报</button>
             <button class="nav-tab" onclick="switchTab('chat')">💬 AI对话</button>
-            <a href="https://api.ssopen.top" target="_blank" class="get-key-link">🔑 获取key</a>
         </div>
 
         <!-- 状态消息区域 -->

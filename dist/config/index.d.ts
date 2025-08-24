@@ -1,5 +1,5 @@
 /**
- * MCP Feedback Collector - 配置管理
+ * Hello MCP - 配置管理
  */
 import { Config } from '../types/index.js';
 /**

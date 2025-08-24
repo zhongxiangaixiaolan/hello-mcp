@@ -175,11 +175,11 @@ export class ProcessManager {
     isOwnProcess(processInfo) {
         const ownProcessNames = [
             'node',
-            'mcp-feedback-collector',
+            'hello-mcp',
             'tsx'
         ];
         const ownKeywords = [
-            'mcp-feedback-collector',
+            'hello-mcp',
             'cli.js',
             'cli.ts',
             'dist/cli.js',
@@ -210,7 +210,7 @@ export class ProcessManager {
             'node',
             'npm',
             'npx',
-            'mcp-feedback-collector',
+            'hello-mcp',
             'tsx'
         ];
         const dangerousNames = [
