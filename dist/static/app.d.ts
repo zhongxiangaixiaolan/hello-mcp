@@ -24,6 +24,12 @@ declare function processMathInText(text: any): any;
 declare function copyCodeToClipboard(button: any): void;
 declare function toggleMermaidView(mermaidId: any): void;
 declare function downloadMermaidImage(mermaidId: any): void;
+declare function toggleMermaidZoom(mermaidId: any): void;
+declare function closeMermaidZoom(mermaidId: any): void;
+declare function zoomMermaidIn(): void;
+declare function zoomMermaidOut(): void;
+declare function resetMermaidZoom(): void;
+declare function updateZoomLevel(): void;
 declare function initializeMermaidContainer(mermaidId: any): void;
 declare function displayWorkSummary(workSummary: any): void;
 declare function addCopyButtonsToCodeBlocks(container: any): void;
@@ -128,4 +134,5 @@ declare let autoSubmitWarningShown: boolean;
 declare let timeoutWarningId: null;
 declare let countdownIntervalId: null;
 declare const QUICK_PHRASE: "\n\n---\n\nWhenever you want to ask a question, always call the MCP .\n\nWhenever you're about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user's feedback is empty, then end the request. hello-mcp.collect_feedback";
+declare let currentZoomLevel: number;
 //# sourceMappingURL=app.d.ts.map

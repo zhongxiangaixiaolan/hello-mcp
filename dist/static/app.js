@@ -827,6 +827,10 @@ function initializeMarkdown() {
                                         <span class="download-icon">💾</span>
                                         <span class="download-text">下载图片</span>
                                     </button>
+                                    <button class="mermaid-zoom-btn" onclick="toggleMermaidZoom('${mermaidId}')">
+                                        <span class="zoom-icon">🔍</span>
+                                        <span class="zoom-text">缩放</span>
+                                    </button>
                                     <button class="copy-code-btn" onclick="copyCodeToClipboard(this)">
                                         <span class="copy-icon">📋</span>
                                         <span class="copy-text">复制代码</span>
@@ -1317,6 +1321,130 @@ function downloadMermaidImage(mermaidId) {
     } catch (error) {
         console.error('下载失败:', error);
         alert('图片下载失败，请重试');
+    }
+}
+
+// Mermaid图表缩放功能
+function toggleMermaidZoom(mermaidId) {
+    const container = document.getElementById(mermaidId);
+    if (!container) return;
+
+    const diagramView = container.querySelector('.mermaid-diagram');
+    const mermaidElement = diagramView.querySelector('.mermaid');
+    const zoomBtn = container.parentElement.querySelector('.mermaid-zoom-btn');
+    const zoomIcon = zoomBtn.querySelector('.zoom-icon');
+    const zoomText = zoomBtn.querySelector('.zoom-text');
+
+    if (!mermaidElement) return;
+
+    // 检查当前是否已经放大
+    const isZoomed = mermaidElement.classList.contains('zoomed');
+
+    if (isZoomed) {
+        // 缩小到原始大小
+        mermaidElement.classList.remove('zoomed');
+        mermaidElement.style.transform = 'scale(1)';
+        mermaidElement.style.cursor = 'zoom-in';
+        zoomIcon.textContent = '🔍';
+        zoomText.textContent = '放大';
+
+        // 移除全屏遮罩
+        const overlay = document.querySelector('.mermaid-zoom-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    } else {
+        // 放大图表
+        mermaidElement.classList.add('zoomed');
+        mermaidElement.style.transform = 'scale(1.5)';
+        mermaidElement.style.cursor = 'zoom-out';
+        zoomIcon.textContent = '🔍';
+        zoomText.textContent = '缩小';
+
+        // 创建全屏遮罩
+        const overlay = document.createElement('div');
+        overlay.className = 'mermaid-zoom-overlay';
+        overlay.innerHTML = `
+            <div class="zoom-container">
+                <div class="zoom-header">
+                    <span>🎨 图表预览</span>
+                    <button class="zoom-close" onclick="closeMermaidZoom('${mermaidId}')">✕</button>
+                </div>
+                <div class="zoom-content">
+                    ${mermaidElement.outerHTML}
+                </div>
+                <div class="zoom-controls">
+                    <button onclick="zoomMermaidIn()">放大 🔍+</button>
+                    <button onclick="zoomMermaidOut()">缩小 🔍-</button>
+                    <button onclick="resetMermaidZoom()">重置 🔄</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // 初始化缩放控制
+        const zoomedElement = overlay.querySelector('.mermaid');
+        if (zoomedElement) {
+            zoomedElement.style.transform = 'scale(1)';
+            zoomedElement.style.transformOrigin = 'center center';
+            zoomedElement.style.transition = 'transform 0.3s ease';
+        }
+    }
+}
+
+// 关闭缩放视图
+function closeMermaidZoom(mermaidId) {
+    const overlay = document.querySelector('.mermaid-zoom-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+
+    // 重置原始图表状态
+    const container = document.getElementById(mermaidId);
+    if (container) {
+        const mermaidElement = container.querySelector('.mermaid');
+        const zoomBtn = container.parentElement.querySelector('.mermaid-zoom-btn');
+
+        if (mermaidElement) {
+            mermaidElement.classList.remove('zoomed');
+            mermaidElement.style.transform = 'scale(1)';
+            mermaidElement.style.cursor = 'zoom-in';
+        }
+
+        if (zoomBtn) {
+            const zoomIcon = zoomBtn.querySelector('.zoom-icon');
+            const zoomText = zoomBtn.querySelector('.zoom-text');
+            zoomIcon.textContent = '🔍';
+            zoomText.textContent = '缩放';
+        }
+    }
+}
+
+// 缩放控制函数
+let currentZoomLevel = 1;
+
+function zoomMermaidIn() {
+    currentZoomLevel = Math.min(currentZoomLevel + 0.2, 3);
+    updateZoomLevel();
+}
+
+function zoomMermaidOut() {
+    currentZoomLevel = Math.max(currentZoomLevel - 0.2, 0.5);
+    updateZoomLevel();
+}
+
+function resetMermaidZoom() {
+    currentZoomLevel = 1;
+    updateZoomLevel();
+}
+
+function updateZoomLevel() {
+    const overlay = document.querySelector('.mermaid-zoom-overlay');
+    if (overlay) {
+        const zoomedElement = overlay.querySelector('.mermaid');
+        if (zoomedElement) {
+            zoomedElement.style.transform = `scale(${currentZoomLevel})`;
+        }
     }
 }
 
