@@ -822,126 +822,237 @@
             border-color: #007acc;
         }
 
-        /* 数学公式样式 */
+        /* 数学公式样式 - 美化版 */
         .math-display {
-            margin: 16px 0;
+            margin: 20px 0;
             text-align: center;
             overflow-x: auto;
-            padding: 8px;
-            background: #2d2d30;
-            border-radius: 6px;
-            border: 1px solid #3e3e42;
+            padding: 20px;
+            background: linear-gradient(135deg, #2d2d30 0%, #252528 100%);
+            border-radius: 12px;
+            border: 1px solid #4a4a4f;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .math-display::before {
+            content: "📐";
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            font-size: 14px;
+            opacity: 0.6;
         }
 
         .math-inline {
             display: inline;
-            margin: 0 2px;
+            margin: 0 3px;
+            padding: 2px 6px;
+            background: rgba(45, 45, 48, 0.6);
+            border-radius: 4px;
+            border: 1px solid rgba(62, 62, 66, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .math-inline:hover {
+            background: rgba(45, 45, 48, 0.8);
+            border-color: #007acc;
+            box-shadow: 0 2px 8px rgba(0, 122, 204, 0.2);
         }
 
         .math-error {
-            color: #f48771;
-            background: #3c1e1e;
-            padding: 2px 6px;
-            border-radius: 4px;
+            color: #ff6b6b;
+            background: linear-gradient(135deg, #3c1e1e 0%, #2d1515 100%);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #ff4757;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12px;
+            box-shadow: 0 2px 6px rgba(255, 71, 87, 0.2);
+            animation: errorPulse 2s ease-in-out infinite;
         }
 
-        /* KaTeX样式覆盖 */
+        @keyframes errorPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* KaTeX样式覆盖 - 增强版 */
         .katex {
             color: #ffffff !important;
+            font-size: 1.1em !important;
         }
 
         .katex .base {
             color: #ffffff !important;
         }
 
-        /* Mermaid图表样式 */
+        .katex .mord {
+            color: #e8e8e8 !important;
+        }
+
+        .katex .mop {
+            color: #61dafb !important;
+        }
+
+        .katex .mbin {
+            color: #ffd93d !important;
+        }
+
+        .katex .mrel {
+            color: #ff6b6b !important;
+        }
+
+        .katex .mopen, .katex .mclose {
+            color: #a8e6cf !important;
+        }
+
+        .katex .mfrac .frac-line {
+            border-bottom-color: #ffffff !important;
+        }
+
+        /* Mermaid图表样式 - 优化版 */
         .mermaid-wrapper {
-            margin: 16px 0;
-            border: 1px solid #3e3e42;
-            border-radius: 8px;
-            background: #1e1e1e;
+            margin: 20px 0;
+            border: 1px solid #4a4a4f;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #252528 100%);
             overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .mermaid-wrapper:hover {
+            border-color: #007acc;
+            box-shadow: 0 6px 20px rgba(0, 122, 204, 0.2);
         }
 
         .mermaid-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: #2d2d30;
-            border-bottom: 1px solid #3e3e42;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #2d2d30 0%, #3a3a3f 100%);
+            border-bottom: 1px solid #4a4a4f;
         }
 
         .mermaid-label {
             color: #ffffff;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .mermaid-controls {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .mermaid-toggle-btn,
         .mermaid-download-btn {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 6px 12px;
-            background: #007acc;
+            gap: 6px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #007acc 0%, #005a9e 100%);
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
         }
 
         .mermaid-toggle-btn:hover,
         .mermaid-download-btn:hover {
-            background: #005a9e;
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, #0099ff 0%, #007acc 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 122, 204, 0.4);
+        }
+
+        .mermaid-toggle-btn:active,
+        .mermaid-download-btn:active {
+            transform: translateY(0);
         }
 
         .mermaid-content {
-            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mermaid-diagram,
+        .mermaid-code {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
         }
 
         .mermaid-diagram {
             text-align: center;
-            background: white;
-            border-radius: 6px;
-            padding: 20px;
-            margin-bottom: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 16px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .mermaid-diagram .mermaid {
             background: transparent;
             border: none;
             font-family: 'Arial', sans-serif;
+            width: 100%;
         }
 
         .mermaid-code {
             background: #1e1e1e;
+            margin: 16px;
+            border-radius: 8px;
+            min-height: 200px;
+            display: flex;
+            align-items: stretch;
         }
 
         .mermaid-code .code-block {
             margin: 0;
-            background: #1e1e1e;
+            background: linear-gradient(135deg, #1e1e1e 0%, #252528 100%);
             border: 1px solid #3e3e42;
-            border-radius: 6px;
+            border-radius: 8px;
+            width: 100%;
+            min-height: 200px;
+        }
+
+        .mermaid-code .code-block code {
+            display: block;
+            padding: 20px;
+            min-height: 160px;
+            line-height: 1.6;
+        }
+
+        /* 切换动画效果 */
+        .mermaid-diagram.hiding,
+        .mermaid-code.hiding {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .mermaid-diagram.showing,
+        .mermaid-code.showing {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* Mermaid图表内部样式优化 */
         .mermaid svg {
             max-width: 100%;
             height: auto;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
         }
 
         /* 响应式设计 */

@@ -1061,7 +1061,14 @@ function parseMarkdown(content) {
 
             // 如果Mermaid可用，渲染图表
             if (typeof mermaid !== 'undefined') {
-                mermaid.run();
+                mermaid.run().then(() => {
+                    // 渲染完成后初始化容器尺寸
+                    if (typeof window.onMermaidRender === 'function') {
+                        window.onMermaidRender();
+                    }
+                }).catch(error => {
+                    console.warn('Mermaid渲染失败:', error);
+                });
             }
         }, 100);
 
@@ -1179,7 +1186,7 @@ function copyCodeToClipboard(button) {
     });
 }
 
-// Mermaid图表视图切换函数
+// Mermaid图表视图切换函数 - 优化版
 function toggleMermaidView(mermaidId) {
     const container = document.getElementById(mermaidId);
     if (!container) return;
@@ -1190,18 +1197,58 @@ function toggleMermaidView(mermaidId) {
     const toggleIcon = toggleBtn.querySelector('.toggle-icon');
     const toggleText = toggleBtn.querySelector('.toggle-text');
 
-    if (diagramView.style.display === 'none') {
-        // 切换到图表视图
-        diagramView.style.display = 'block';
-        codeView.style.display = 'none';
-        toggleIcon.textContent = '👁️';
-        toggleText.textContent = '切换视图';
-    } else {
+    // 防止重复点击
+    if (toggleBtn.disabled) return;
+    toggleBtn.disabled = true;
+
+    // 获取当前显示的视图
+    const isShowingDiagram = diagramView.style.display !== 'none';
+
+    if (isShowingDiagram) {
         // 切换到代码视图
-        diagramView.style.display = 'none';
-        codeView.style.display = 'block';
-        toggleIcon.textContent = '📝';
-        toggleText.textContent = '查看图表';
+        diagramView.classList.add('hiding');
+
+        setTimeout(() => {
+            diagramView.style.display = 'none';
+            diagramView.classList.remove('hiding');
+
+            codeView.style.display = 'block';
+            codeView.classList.add('showing');
+
+            toggleIcon.textContent = '📝';
+            toggleText.textContent = '查看图表';
+
+            setTimeout(() => {
+                codeView.classList.remove('showing');
+                toggleBtn.disabled = false;
+            }, 100);
+        }, 200);
+    } else {
+        // 切换到图表视图
+        codeView.classList.add('hiding');
+
+        setTimeout(() => {
+            codeView.style.display = 'none';
+            codeView.classList.remove('hiding');
+
+            diagramView.style.display = 'block';
+            diagramView.classList.add('showing');
+
+            toggleIcon.textContent = '👁️';
+            toggleText.textContent = '切换视图';
+
+            // 重新渲染Mermaid图表（如果需要）
+            if (typeof mermaid !== 'undefined') {
+                setTimeout(() => {
+                    mermaid.run();
+                }, 50);
+            }
+
+            setTimeout(() => {
+                diagramView.classList.remove('showing');
+                toggleBtn.disabled = false;
+            }, 100);
+        }, 200);
     }
 }
 
@@ -1272,6 +1319,44 @@ function downloadMermaidImage(mermaidId) {
         alert('图片下载失败，请重试');
     }
 }
+
+// 初始化Mermaid容器尺寸
+function initializeMermaidContainer(mermaidId) {
+    const container = document.getElementById(mermaidId);
+    if (!container) return;
+
+    const diagramView = container.querySelector('.mermaid-diagram');
+    const codeView = container.querySelector('.mermaid-code');
+
+    // 等待Mermaid渲染完成后获取尺寸
+    setTimeout(() => {
+        if (diagramView && diagramView.style.display !== 'none') {
+            const diagramHeight = diagramView.offsetHeight;
+            const diagramWidth = diagramView.offsetWidth;
+
+            // 设置代码视图的最小尺寸与图表视图一致
+            if (codeView) {
+                codeView.style.minHeight = diagramHeight + 'px';
+                codeView.style.minWidth = diagramWidth + 'px';
+
+                const codeBlock = codeView.querySelector('.code-block');
+                if (codeBlock) {
+                    codeBlock.style.minHeight = (diagramHeight - 32) + 'px'; // 减去padding
+                }
+            }
+        }
+    }, 500);
+}
+
+// 全局函数，在Mermaid渲染完成后调用
+window.onMermaidRender = function() {
+    // 为所有Mermaid容器初始化尺寸
+    document.querySelectorAll('.mermaid-content').forEach(container => {
+        if (container.id) {
+            initializeMermaidContainer(container.id);
+        }
+    });
+};
 
 // 显示工作汇报内容
 function displayWorkSummary(workSummary) {
