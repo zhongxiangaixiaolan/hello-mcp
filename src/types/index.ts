@@ -24,6 +24,8 @@ export interface Config {
   // 新增：图片转文字功能配置
   enableImageToText?: boolean | undefined;   // 启用图片转文字功能
   imageToTextPrompt?: string | undefined;    // 图片转文字提示词
+  // 新增：数据库配置
+  database?: DatabaseConfig;                 // 数据库配置
 }
 
 // 反馈数据类型
@@ -172,4 +174,30 @@ export interface MCPLogMessage {
   level: MCPLogLevel;
   logger?: string;
   data: unknown;
+}
+
+// 数据库配置类型
+export interface DatabaseConfig {
+  // 数据库连接配置
+  connections?: {
+    [key: string]: {
+      type: 'mysql' | 'postgresql';
+      host: string;
+      port: number;
+      database: string;
+      user: string;
+      password: string;
+      ssl?: boolean | object;
+      pool?: {
+        min?: number;
+        max?: number;
+        idleTimeoutMillis?: number;
+        connectionTimeoutMillis?: number;
+      };
+    };
+  };
+  // 默认连接ID
+  defaultConnection?: string | undefined;
+  // 是否启用数据库工具
+  enableDatabaseTools?: boolean;
 }

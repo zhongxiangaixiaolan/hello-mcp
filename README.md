@@ -1,5 +1,5 @@
 # 🎯 Hello MCP
-基于Node.js的MCP工具，支持AI工作汇报和用户反馈收集。
+基于Node.js的MCP工具，支持AI工作汇报、用户反馈收集和数据库操作。
 
 ## 🚀 快速开始
 
@@ -32,6 +32,54 @@ hello-mcp
   }
 }
 ```
+
+## ✨ 功能特性
+
+- 🎯 **AI工作汇报收集** - 通过Web界面收集用户对AI工作的反馈
+- 🗄️ **数据库操作** - 支持MySQL和PostgreSQL数据库的连接和操作
+- 🖼️ **图片支持** - 支持上传和处理图片反馈
+- 🔄 **实时通信** - 基于Socket.IO的实时数据传输
+- 🛡️ **安全可靠** - 内置安全措施和错误处理
+- 📱 **响应式设计** - 适配各种设备和屏幕尺寸
+- 🎨 **现代UI** - 简洁美观的用户界面
+- 🔧 **易于配置** - 灵活的配置选项和环境变量支持
+
+## 🗄️ 数据库工具
+
+Hello MCP 现在集成了强大的数据库工具，支持以下功能：
+
+### 支持的数据库
+- **MySQL** - 高性能关系型数据库
+- **PostgreSQL** - 功能丰富的开源数据库
+
+### 统一工具：database_operation
+通过单一工具支持所有数据库操作：
+- `connect` - 连接数据库
+- `query` - 执行SELECT查询
+- `execute` - 执行INSERT/UPDATE/DELETE命令
+- `list_databases` - 列出数据库
+- `list_tables` - 列出表
+- `describe_table` - 获取表结构
+- `disconnect` - 断开连接
+- `status` - 获取连接状态
+
+### 使用示例
+```json
+{
+  "operation": "connect",
+  "connectionId": "my-db",
+  "connectionConfig": {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "database": "testdb",
+    "user": "root",
+    "password": "password"
+  }
+}
+```
+
+详细使用说明请参考 [DATABASE_TOOLS.md](./DATABASE_TOOLS.md)
 
 ## 📄 许可证
 

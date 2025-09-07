@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "hello-mcp-database": {
+      "command": "node",
+      "args": [
+        "dist/cli.js",
+        "start",
+        "--stdio"
+      ],
+      "cwd": "path/to/your/hello-mcp-project",
+      "env": {
+        "MCP_ENABLE_DATABASE_TOOLS": "true",
+        "MCP_DEFAULT_DB_CONNECTION": "main-db",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

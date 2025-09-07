@@ -19,6 +19,7 @@ export interface Config {
     cleanupPortOnStart?: boolean | undefined;
     enableImageToText?: boolean | undefined;
     imageToTextPrompt?: string | undefined;
+    database?: DatabaseConfig;
 }
 export interface FeedbackData {
     text?: string;
@@ -133,5 +134,26 @@ export interface MCPLogMessage {
     level: MCPLogLevel;
     logger?: string;
     data: unknown;
+}
+export interface DatabaseConfig {
+    connections?: {
+        [key: string]: {
+            type: 'mysql' | 'postgresql';
+            host: string;
+            port: number;
+            database: string;
+            user: string;
+            password: string;
+            ssl?: boolean | object;
+            pool?: {
+                min?: number;
+                max?: number;
+                idleTimeoutMillis?: number;
+                connectionTimeoutMillis?: number;
+            };
+        };
+    };
+    defaultConnection?: string | undefined;
+    enableDatabaseTools?: boolean;
 }
 //# sourceMappingURL=index.d.ts.map

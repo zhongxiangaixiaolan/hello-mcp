@@ -10,11 +10,16 @@ export declare class MCPServer {
     private webServer;
     private config;
     private isRunning;
+    private unifiedDatabaseTools;
     constructor(config: Config);
     /**
      * 注册MCP工具函数
      */
     private registerTools;
+    /**
+     * 注册统一数据库工具
+     */
+    private registerDatabaseTools;
     /**
      * 设置MCP日志功能
      */

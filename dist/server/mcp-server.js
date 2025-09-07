@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { MCPError } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { WebServer } from './web-server.js';
+import { UnifiedDatabaseTools } from '../database/index.js';
 /**
  * MCP服务器类
  */
@@ -16,6 +17,7 @@ export class MCPServer {
     webServer;
     config;
     isRunning = false;
+    unifiedDatabaseTools;
     constructor(config) {
         this.config = config;
         // 创建MCP服务器实例
@@ -34,6 +36,8 @@ export class MCPServer {
         };
         // 创建Web服务器实例
         this.webServer = new WebServer(config);
+        // 创建统一数据库工具实例
+        this.unifiedDatabaseTools = new UnifiedDatabaseTools();
         // 注册MCP工具函数和日志处理
         this.registerTools();
         this.setupLogging();
@@ -66,9 +70,39 @@ export class MCPServer {
                 throw new MCPError('Failed to collect feedback', 'COLLECT_FEEDBACK_ERROR', error);
             }
         });
+        // 注册数据库工具
+        this.registerDatabaseTools();
         if (logger.getLevel() !== 'silent') {
             logger.info('MCP工具函数注册完成');
         }
+    }
+    /**
+     * 注册统一数据库工具
+     */
+    registerDatabaseTools() {
+        const toolDefinition = this.unifiedDatabaseTools.getTool();
+        // 注册统一数据库操作工具
+        this.mcpServer.registerTool(toolDefinition.name, {
+            description: toolDefinition.description,
+            inputSchema: toolDefinition.inputSchema.shape
+        }, async (args) => {
+            try {
+                const result = await this.unifiedDatabaseTools.executeDatabaseOperation(args);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify(result, null, 2)
+                        }
+                    ]
+                };
+            }
+            catch (error) {
+                logger.error(`database_operation工具调用失败 (${args.operation}):`, error);
+                throw new MCPError(`Failed to execute database operation: ${args.operation}`, 'DATABASE_OPERATION_ERROR', error);
+            }
+        });
+        logger.info('统一数据库工具注册完成');
     }
     /**
      * 设置MCP日志功能
