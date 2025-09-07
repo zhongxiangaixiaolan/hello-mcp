@@ -56,7 +56,7 @@ export function createDefaultConfig(): Config {
     apiKey: process.env['MCP_API_KEY'],
     apiBaseUrl: getEnvVar('MCP_API_BASE_URL', 'https://api.ssopen.top'),
     defaultModel: getEnvVar('MCP_DEFAULT_MODEL', 'gpt-4o-mini'),
-    webPort: getEnvNumber('MCP_WEB_PORT', 5000),
+    webPort: getEnvNumber('MCP_WEB_PORT', 5050),
     dialogTimeout: getEnvNumber('MCP_DIALOG_TIMEOUT', 60000),
     enableChat: getEnvBoolean('MCP_ENABLE_CHAT', true),
     corsOrigin: getEnvVar('MCP_CORS_ORIGIN', '*'),
@@ -78,7 +78,23 @@ export function createDefaultConfig(): Config {
       enableDatabaseTools: getEnvBoolean('MCP_ENABLE_DATABASE_TOOLS', true),
       defaultConnection: getOptionalEnvVar('MCP_DEFAULT_DB_CONNECTION'),
       connections: {}
-    }
+    },
+    // 新增：工具默认参数配置
+    toolDefaults: {
+      collectFeedback: {
+        dialogTimeout: getEnvNumber('MCP_FEEDBACK_TIMEOUT', 60000),
+        autoOpenBrowser: getEnvBoolean('MCP_FEEDBACK_AUTO_OPEN', true),
+        defaultWorkSummary: getOptionalEnvVar('MCP_FEEDBACK_DEFAULT_SUMMARY')
+      },
+      databaseOperation: {
+        defaultConnections: {},
+        defaultTimeout: getEnvNumber('MCP_DB_DEFAULT_TIMEOUT', 30000),
+        defaultMaxRows: getEnvNumber('MCP_DB_DEFAULT_MAX_ROWS', 1000),
+        defaultSchema: getOptionalEnvVar('MCP_DB_DEFAULT_SCHEMA')
+      }
+    },
+    // 新增：设置界面配置
+    settingsPort: getEnvNumber('MCP_SETTINGS_PORT', 5050)
   };
 }
 

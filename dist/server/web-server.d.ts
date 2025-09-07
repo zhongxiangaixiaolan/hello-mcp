@@ -30,6 +30,10 @@ export declare class WebServer {
      */
     private setupRoutes;
     /**
+     * 设置设置相关API路由
+     */
+    private setupSettingsRoutes;
+    /**
      * 设置Socket.IO事件处理
      */
     private setupSocketHandlers;

@@ -155,7 +155,7 @@ export interface DatabaseOperationResponse {
     type: DatabaseType;
     host: string;
     database: string;
-    status: 'connected' | 'disconnected' | 'error';
+    status: 'connected' | 'disconnected' | 'error' | 'pre-configured';
     lastUsed?: Date;
   }>;
 

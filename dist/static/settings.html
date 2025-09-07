@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP工具设置</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛠️ MCP工具设置</h1>
+            <p class="subtitle">配置 collect_feedback 和 database_operation 工具的默认参数</p>
+        </header>
+
+        <div class="settings-content">
+            <!-- collect_feedback 工具设置 -->
+            <section class="tool-section">
+                <h2>📝 collect_feedback 工具设置</h2>
+                <div class="form-group">
+                    <label for="dialogTimeout">默认超时时间（秒）：</label>
+                    <input type="number" id="dialogTimeout" name="dialogTimeout" min="10" max="3600" step="1">
+                    <small>反馈收集的超时时间，超时后自动关闭</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="autoOpenBrowser">自动打开浏览器：</label>
+                    <input type="checkbox" id="autoOpenBrowser" name="autoOpenBrowser">
+                    <small>收集反馈时是否自动打开浏览器</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="defaultWorkSummary">默认工作汇报模板：</label>
+                    <textarea id="defaultWorkSummary" name="defaultWorkSummary" rows="3" placeholder="可选：设置默认的工作汇报模板"></textarea>
+                    <small>可选：为工作汇报设置默认模板</small>
+                </div>
+            </section>
+
+            <!-- database_operation 工具设置 -->
+            <section class="tool-section">
+                <h2>🗄️ database_operation 工具设置</h2>
+                
+                <div class="form-group">
+                    <label for="defaultTimeout">默认查询超时（毫秒）：</label>
+                    <input type="number" id="defaultTimeout" name="defaultTimeout" min="1000" max="300000" step="1000">
+                    <small>数据库查询的默认超时时间</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="defaultMaxRows">默认最大行数：</label>
+                    <input type="number" id="defaultMaxRows" name="defaultMaxRows" min="1" max="100000" step="1">
+                    <small>查询结果的默认最大行数限制</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="defaultSchema">默认模式名：</label>
+                    <input type="text" id="defaultSchema" name="defaultSchema" placeholder="可选：PostgreSQL默认模式">
+                    <small>可选：PostgreSQL数据库的默认模式名</small>
+                </div>
+
+                <h3>🔗 默认数据库连接</h3>
+                <div id="connections-container">
+                    <div id="connections-list">
+                        <!-- 动态生成的连接配置 -->
+                    </div>
+                    <button type="button" id="add-connection" class="btn btn-secondary">➕ 添加连接</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="actions">
+            <button id="save-settings" class="btn btn-primary">💾 保存设置</button>
+            <button id="reset-settings" class="btn btn-warning">🔄 重置为默认</button>
+            <button id="test-settings" class="btn btn-info">🧪 测试配置</button>
+        </div>
+
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <!-- 连接配置模板 -->
+    <template id="connection-template">
+        <div class="connection-item">
+            <div class="connection-header">
+                <h4>数据库连接</h4>
+                <button type="button" class="remove-connection">❌</button>
+            </div>
+            <div class="connection-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>连接ID：</label>
+                        <input type="text" name="connectionId" placeholder="例如：main-db" required>
+                    </div>
+                    <div class="form-group">
+                        <label>数据库类型：</label>
+                        <select name="type" required>
+                            <option value="mysql">MySQL</option>
+                            <option value="postgresql">PostgreSQL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>主机：</label>
+                        <input type="text" name="host" placeholder="localhost" required>
+                    </div>
+                    <div class="form-group">
+                        <label>端口：</label>
+                        <input type="number" name="port" placeholder="3306" min="1" max="65535" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>数据库名：</label>
+                        <input type="text" name="database" placeholder="数据库名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>用户名：</label>
+                        <input type="text" name="user" placeholder="用户名" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>密码：</label>
+                        <input type="password" name="password" placeholder="密码" required>
+                    </div>
+                    <div class="form-group">
+                        <label>启用SSL：</label>
+                        <input type="checkbox" name="ssl">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="settings.js"></script>
+</body>
+</html>

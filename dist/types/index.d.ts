@@ -1,6 +1,29 @@
 /**
  * MCP Feedback Collector - 类型定义
  */
+export interface ToolDefaultsConfig {
+    collectFeedback?: {
+        dialogTimeout?: number;
+        autoOpenBrowser?: boolean;
+        defaultWorkSummary?: string | undefined;
+    };
+    databaseOperation?: {
+        defaultConnections?: {
+            [connectionId: string]: {
+                type: 'mysql' | 'postgresql';
+                host: string;
+                port: number;
+                database: string;
+                user: string;
+                password: string;
+                ssl?: boolean;
+            };
+        };
+        defaultTimeout?: number;
+        defaultMaxRows?: number;
+        defaultSchema?: string | undefined;
+    };
+}
 export interface Config {
     apiKey?: string | undefined;
     apiBaseUrl: string;
@@ -20,6 +43,8 @@ export interface Config {
     enableImageToText?: boolean | undefined;
     imageToTextPrompt?: string | undefined;
     database?: DatabaseConfig;
+    toolDefaults?: ToolDefaultsConfig;
+    settingsPort?: number;
 }
 export interface FeedbackData {
     text?: string;

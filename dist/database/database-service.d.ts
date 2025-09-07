@@ -70,5 +70,9 @@ export declare class DatabaseService {
         isConnected: boolean;
         lastUsed: Date;
     }[];
+    /**
+     * 获取连接对象
+     */
+    getConnection(connectionId: string): import("./types.js").DatabaseConnection;
 }
 //# sourceMappingURL=database-service.d.ts.map

@@ -2,6 +2,31 @@
  * MCP Feedback Collector - 类型定义
  */
 
+// 工具默认参数配置类型
+export interface ToolDefaultsConfig {
+  collectFeedback?: {
+    dialogTimeout?: number;
+    autoOpenBrowser?: boolean;
+    defaultWorkSummary?: string | undefined;
+  };
+  databaseOperation?: {
+    defaultConnections?: {
+      [connectionId: string]: {
+        type: 'mysql' | 'postgresql';
+        host: string;
+        port: number;
+        database: string;
+        user: string;
+        password: string;
+        ssl?: boolean;
+      };
+    };
+    defaultTimeout?: number;
+    defaultMaxRows?: number;
+    defaultSchema?: string | undefined;
+  };
+}
+
 // 基础配置类型
 export interface Config {
   apiKey?: string | undefined;
@@ -26,6 +51,10 @@ export interface Config {
   imageToTextPrompt?: string | undefined;    // 图片转文字提示词
   // 新增：数据库配置
   database?: DatabaseConfig;                 // 数据库配置
+  // 新增：工具默认参数配置
+  toolDefaults?: ToolDefaultsConfig;         // 工具默认参数
+  // 新增：设置界面配置
+  settingsPort?: number;                     // 设置界面端口，默认5050
 }
 
 // 反馈数据类型

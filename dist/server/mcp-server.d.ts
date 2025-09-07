@@ -13,6 +13,14 @@ export declare class MCPServer {
     private unifiedDatabaseTools;
     constructor(config: Config);
     /**
+     * 异步初始化设置存储并注册工具
+     */
+    private initializeAsync;
+    /**
+     * 初始化设置存储（保留用于其他地方调用）
+     */
+    private initializeSettings;
+    /**
      * 注册MCP工具函数
      */
     private registerTools;

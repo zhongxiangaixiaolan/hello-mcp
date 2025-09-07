@@ -59,8 +59,8 @@ export declare class UnifiedDatabaseTools {
                 maxRows?: number | undefined;
             }>>;
         }, "strip", z.ZodTypeAny, {
-            operation: "disconnect" | "connect" | "query" | "execute" | "list_databases" | "list_tables" | "describe_table" | "status";
             connectionId: string;
+            operation: "disconnect" | "connect" | "query" | "execute" | "list_databases" | "list_tables" | "describe_table" | "status";
             options?: {
                 timeout?: number | undefined;
                 maxRows?: number | undefined;
@@ -79,8 +79,8 @@ export declare class UnifiedDatabaseTools {
             tableName?: string | undefined;
             schema?: string | undefined;
         }, {
-            operation: "disconnect" | "connect" | "query" | "execute" | "list_databases" | "list_tables" | "describe_table" | "status";
             connectionId: string;
+            operation: "disconnect" | "connect" | "query" | "execute" | "list_databases" | "list_tables" | "describe_table" | "status";
             options?: {
                 timeout?: number | undefined;
                 maxRows?: number | undefined;

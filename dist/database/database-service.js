@@ -277,5 +277,11 @@ export class DatabaseService {
     getConnectionStatus() {
         return this.connectionManager.getConnectionStatus();
     }
+    /**
+     * 获取连接对象
+     */
+    getConnection(connectionId) {
+        return this.connectionManager.getConnection(connectionId);
+    }
 }
 //# sourceMappingURL=database-service.js.map

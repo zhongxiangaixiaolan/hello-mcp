@@ -1,0 +1,30 @@
+{
+  "collectFeedback": {
+    "dialogTimeout": 60000,
+    "autoOpenBrowser": true
+  },
+  "databaseOperation": {
+    "defaultConnections": {
+      "busnew-postgresql": {
+        "type": "postgresql",
+        "host": "localhost",
+        "port": 5432,
+        "database": "busnew",
+        "user": "postgres",
+        "password": "1234",
+        "ssl": false
+      },
+      "test-postgresql": {
+        "type": "postgresql",
+        "host": "localhost",
+        "port": 5432,
+        "database": "test",
+        "user": "postgres",
+        "password": "1234",
+        "ssl": false
+      }
+    },
+    "defaultTimeout": 30000,
+    "defaultMaxRows": 1000
+  }
+}

@@ -364,4 +364,11 @@ export class DatabaseService {
   getConnectionStatus() {
     return this.connectionManager.getConnectionStatus();
   }
+
+  /**
+   * 获取连接对象
+   */
+  getConnection(connectionId: string) {
+    return this.connectionManager.getConnection(connectionId);
+  }
 }

@@ -9,6 +9,7 @@ import { MCPError } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { WebServer } from './web-server.js';
 import { UnifiedDatabaseTools } from '../database/index.js';
+import { settingsStorage } from '../config/settings-storage.js';
 /**
  * MCP服务器类
  */
@@ -38,9 +39,41 @@ export class MCPServer {
         this.webServer = new WebServer(config);
         // 创建统一数据库工具实例
         this.unifiedDatabaseTools = new UnifiedDatabaseTools();
-        // 注册MCP工具函数和日志处理
-        this.registerTools();
+        // 设置日志处理
         this.setupLogging();
+        // 异步初始化设置存储并注册工具
+        this.initializeAsync();
+    }
+    /**
+     * 异步初始化设置存储并注册工具
+     */
+    async initializeAsync() {
+        try {
+            // 先初始化设置存储
+            await settingsStorage.initialize();
+            logger.info('设置存储初始化完成');
+            // 设置加载完成后再注册工具
+            this.registerTools();
+            if (logger.getLevel() !== 'silent') {
+                logger.info('MCP工具函数注册完成');
+            }
+        }
+        catch (error) {
+            logger.error('异步初始化失败:', error);
+            // 即使设置加载失败，也要注册工具（使用默认配置）
+            this.registerTools();
+        }
+    }
+    /**
+     * 初始化设置存储（保留用于其他地方调用）
+     */
+    async initializeSettings() {
+        try {
+            await settingsStorage.initialize();
+        }
+        catch (error) {
+            logger.error('设置存储初始化失败:', error);
+        }
     }
     /**
      * 注册MCP工具函数
@@ -72,9 +105,6 @@ export class MCPServer {
         });
         // 注册数据库工具
         this.registerDatabaseTools();
-        if (logger.getLevel() !== 'silent') {
-            logger.info('MCP工具函数注册完成');
-        }
     }
     /**
      * 注册统一数据库工具
@@ -147,7 +177,9 @@ export class MCPServer {
      */
     async collectFeedback(params) {
         const { work_summary } = params;
-        const timeout_seconds = this.config.dialogTimeout;
+        // 从设置中获取默认超时时间，如果没有设置则使用配置中的值
+        const feedbackDefaults = settingsStorage.getCollectFeedbackDefaults();
+        const timeout_seconds = Math.floor((feedbackDefaults.dialogTimeout || this.config.dialogTimeout) / 1000);
         logger.info(`开始收集反馈，工作汇报长度: ${work_summary.length}字符，超时: ${timeout_seconds}秒`);
         // 发送MCP工具调用开始通知
         logger.mcpToolCallStarted('collect_feedback', {
@@ -284,6 +316,8 @@ export class MCPServer {
         }
         try {
             logger.info('正在启动MCP服务器...');
+            // 初始化设置存储
+            await this.initializeSettings();
             // 连接MCP传输
             const transport = new StdioServerTransport();
             // 设置传输错误处理
@@ -324,6 +358,8 @@ export class MCPServer {
     async startWebOnly() {
         try {
             logger.info('正在启动Web模式...');
+            // 初始化设置存储
+            await this.initializeSettings();
             // 仅启动Web服务器
             await this.webServer.start();
             this.isRunning = true;

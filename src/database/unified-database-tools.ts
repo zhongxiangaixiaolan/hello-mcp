@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { DatabaseService } from './database-service.js';
 import { logger } from '../utils/logger.js';
+import { settingsStorage } from '../config/settings-storage.js';
 import {
   DatabaseOperationParams,
   DatabaseOperationResponse,
@@ -26,6 +27,41 @@ export class UnifiedDatabaseTools {
    * 获取统一数据库工具定义
    */
   getTool() {
+    // 动态读取预配置连接信息
+    const dbDefaults = settingsStorage.getDatabaseOperationDefaults();
+    const defaultConnections = dbDefaults.defaultConnections || {};
+
+    // 生成预配置连接的描述文本
+    let preConfiguredConnectionsText = '';
+    const connectionIds = Object.keys(defaultConnections);
+
+    if (connectionIds.length > 0) {
+      preConfiguredConnectionsText = `
+        AVAILABLE PRE-CONFIGURED CONNECTIONS:
+
+        The following database connections are pre-configured and ready to use:
+        ${connectionIds.map(id => {
+          const config = defaultConnections[id];
+          return `        • ${id}: ${config?.type?.toUpperCase()} database at ${config?.host}:${config?.port}/${config?.database}`;
+        }).join('\n')}
+
+        To use any pre-configured connection, simply provide the connectionId (no connectionConfig needed):
+        {
+          "operation": "connect",
+          "connectionId": "${connectionIds[0]}"
+        }
+
+        `;
+    } else {
+      preConfiguredConnectionsText = `
+        NO PRE-CONFIGURED CONNECTIONS AVAILABLE:
+
+        No pre-configured database connections found in settings.json.
+        You must provide full connectionConfig for connect operations.
+
+        `;
+    }
+
     return {
       name: 'database_operation',
       description: `
@@ -34,14 +70,16 @@ export class UnifiedDatabaseTools {
 
         SUPPORTED OPERATIONS:
 
-        1. CONNECT - Establish database connection
+        1. CONNECT - Establish database connection (supports both direct config and pre-configured connections)
         2. QUERY - Execute SELECT statements (read operations)
         3. EXECUTE - Execute INSERT/UPDATE/DELETE statements (write operations)
         4. LIST_DATABASES - Show all databases on server
         5. LIST_TABLES - Show all tables in database
         6. DESCRIBE_TABLE - Get table structure and column information
         7. DISCONNECT - Close database connection
-        8. STATUS - Check connection status
+        8. STATUS - Check connection status and list available pre-configured connections
+
+        ${preConfiguredConnectionsText}
 
         NATIVE SQL SYNTAX EXAMPLES:
 
@@ -228,9 +266,9 @@ export class UnifiedDatabaseTools {
           'status'
         ]).describe('Type of database operation to perform'),
         
-        connectionId: z.string().describe('Unique identifier for the database connection'),
+        connectionId: z.string().describe('Unique identifier for the database connection. For connect operation, this can reference a pre-configured connection from settings.json (e.g., "test-postgresql") or be a new connection identifier when used with connectionConfig.'),
         
-        // 连接配置（仅用于connect操作）
+        // 连接配置（仅用于connect操作，可选 - 如果省略则使用预配置连接）
         connectionConfig: z.object({
           type: z.enum(['mysql', 'postgresql']).describe('Database type'),
           host: z.string().describe('Database host address'),
@@ -239,7 +277,7 @@ export class UnifiedDatabaseTools {
           user: z.string().describe('Database username'),
           password: z.string().describe('Database password'),
           ssl: z.boolean().optional().describe('Enable SSL connection (optional)')
-        }).optional().describe('Database connection configuration (required for connect operation)'),
+        }).optional().describe('Database connection configuration. OPTIONAL for connect operation - if omitted, will use pre-configured connection from settings.json based on connectionId. Provide this only when you want to create a new connection with specific parameters.'),
         
         // SQL语句（用于query和execute操作）
         sql: z.string().optional().describe('SQL statement to execute (required for query and execute operations)'),
@@ -349,19 +387,37 @@ export class UnifiedDatabaseTools {
    * 处理连接操作
    */
   private async handleConnect(params: DatabaseOperationParams): Promise<DatabaseOperationResponse> {
-    if (!params.connectionConfig) {
-      throw new DatabaseError('Connection configuration is required for connect operation', 'MISSING_CONFIG');
+    let connectionConfig = params.connectionConfig;
+
+    // 如果没有提供连接配置，尝试从设置中获取预配置的连接
+    if (!connectionConfig) {
+      const dbDefaults = settingsStorage.getDatabaseOperationDefaults();
+      const defaultConnections = dbDefaults.defaultConnections || {};
+
+      if (defaultConnections[params.connectionId]) {
+        connectionConfig = defaultConnections[params.connectionId];
+        logger.info(`使用预配置的连接: ${params.connectionId}`);
+      } else {
+        const availableConnections = Object.keys(defaultConnections);
+        const availableConnectionsText = availableConnections.length > 0
+          ? `Available pre-configured connections: ${availableConnections.join(', ')}`
+          : 'No pre-configured connections found in settings.json';
+        throw new DatabaseError(
+          `Connection configuration is required when connectionConfig is not provided. ${availableConnectionsText}. To use pre-configured connections, ensure they are defined in settings.json under databaseOperation.defaultConnections.`,
+          'MISSING_CONNECTION_CONFIG'
+        );
+      }
     }
     
     await this.databaseService.connect({
       connectionId: params.connectionId,
-      type: params.connectionConfig.type,
-      host: params.connectionConfig.host,
-      port: params.connectionConfig.port,
-      database: params.connectionConfig.database,
-      user: params.connectionConfig.user,
-      password: params.connectionConfig.password,
-      ssl: params.connectionConfig.ssl
+      type: connectionConfig!.type,
+      host: connectionConfig!.host,
+      port: connectionConfig!.port,
+      database: connectionConfig!.database,
+      user: connectionConfig!.user,
+      password: connectionConfig!.password,
+      ssl: connectionConfig!.ssl
     });
     
     return {
@@ -486,18 +542,47 @@ export class UnifiedDatabaseTools {
   private async handleStatus(params: DatabaseOperationParams): Promise<DatabaseOperationResponse> {
     const connections = this.databaseService.getConnectionStatus();
 
+    // 获取预配置连接信息
+    const dbDefaults = settingsStorage.getDatabaseOperationDefaults();
+    const defaultConnections = dbDefaults.defaultConnections || {};
+
+    // 构建预配置连接列表（仅包含未激活的）
+    const preConfiguredConnections = Object.keys(defaultConnections)
+      .filter(id => !connections.some(activeConn => activeConn.id === id))
+      .map(id => {
+        const config = defaultConnections[id];
+        if (!config) return null;
+        return {
+          id,
+          type: config.type,
+          host: config.host,
+          database: config.database,
+          status: 'pre-configured' as const
+        };
+      })
+      .filter((conn): conn is NonNullable<typeof conn> => conn !== null);
+
+    // 获取活动连接的详细信息
+    const activeConnections = connections.map(conn => {
+      const dbConnection = this.databaseService.getConnection(conn.id);
+      return {
+        id: conn.id,
+        type: conn.type,
+        host: dbConnection?.config.host || 'unknown',
+        database: dbConnection?.config.database || 'unknown',
+        status: (conn.isConnected ? 'connected' : 'disconnected') as 'connected' | 'disconnected',
+        lastUsed: conn.lastUsed
+      };
+    });
+
     return {
       success: true,
       operation: 'status',
       connectionId: params.connectionId,
-      connections: connections.map(conn => ({
-        id: conn.id,
-        type: conn.type,
-        host: 'unknown', // 需要从连接管理器获取
-        database: 'unknown', // 需要从连接管理器获取
-        status: conn.isConnected ? 'connected' : 'disconnected',
-        lastUsed: conn.lastUsed
-      }))
+      connections: [
+        ...activeConnections,
+        ...preConfiguredConnections
+      ]
     };
   }
 }

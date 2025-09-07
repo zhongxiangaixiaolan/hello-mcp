@@ -16,6 +16,7 @@ import { ImageProcessor } from '../utils/image-processor.js';
 import { ImageToTextService } from '../utils/image-to-text-service.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
 import { SessionStorage } from '../utils/session-storage.js';
+import { settingsStorage } from '../config/settings-storage.js';
 import { VERSION } from '../index.js';
 /**
  * Web服务器类
@@ -158,6 +159,10 @@ export class WebServer {
         this.app.get('/', (req, res) => {
             res.sendFile('index.html', { root: staticPath });
         });
+        // 设置页面路由
+        this.app.get('/settings', (req, res) => {
+            res.sendFile('settings.html', { root: staticPath });
+        });
         // API配置路由
         this.app.get('/api/config', (req, res) => {
             const chatConfig = {
@@ -230,6 +235,8 @@ export class WebServer {
             const report = performanceMonitor.getFormattedReport();
             res.type('text/plain').send(report);
         });
+        // 设置相关API路由
+        this.setupSettingsRoutes();
         // 图片转文字API
         this.app.post('/api/convert-images', async (req, res) => {
             try {
@@ -273,6 +280,95 @@ export class WebServer {
                 error: 'Internal Server Error',
                 message: error.message
             });
+        });
+    }
+    /**
+     * 设置设置相关API路由
+     */
+    setupSettingsRoutes() {
+        // 获取当前设置
+        this.app.get('/api/settings', async (req, res) => {
+            try {
+                const settings = settingsStorage.getSettings();
+                res.json(settings);
+            }
+            catch (error) {
+                logger.error('获取设置失败:', error);
+                res.status(500).json({
+                    error: '获取设置失败',
+                    message: error instanceof Error ? error.message : String(error)
+                });
+            }
+        });
+        // 保存设置
+        this.app.post('/api/settings', async (req, res) => {
+            try {
+                const settings = req.body;
+                await settingsStorage.saveSettings(settings);
+                res.json({ success: true, message: '设置保存成功' });
+            }
+            catch (error) {
+                logger.error('保存设置失败:', error);
+                res.status(500).json({
+                    error: '保存设置失败',
+                    message: error instanceof Error ? error.message : String(error)
+                });
+            }
+        });
+        // 重置设置
+        this.app.post('/api/settings/reset', async (req, res) => {
+            try {
+                await settingsStorage.resetSettings();
+                res.json({ success: true, message: '设置已重置为默认值' });
+            }
+            catch (error) {
+                logger.error('重置设置失败:', error);
+                res.status(500).json({
+                    error: '重置设置失败',
+                    message: error instanceof Error ? error.message : String(error)
+                });
+            }
+        });
+        // 测试设置
+        this.app.post('/api/settings/test', async (req, res) => {
+            try {
+                const settings = req.body;
+                // 简单的设置验证
+                let testResults = [];
+                // 验证 collect_feedback 设置
+                if (settings.collectFeedback) {
+                    const { dialogTimeout } = settings.collectFeedback;
+                    if (dialogTimeout && (dialogTimeout < 10000 || dialogTimeout > 3600000)) {
+                        testResults.push('反馈超时时间应在10秒到1小时之间');
+                    }
+                }
+                // 验证 database_operation 设置
+                if (settings.databaseOperation?.defaultConnections) {
+                    const connections = settings.databaseOperation.defaultConnections;
+                    for (const [connectionId, config] of Object.entries(connections)) {
+                        const dbConfig = config;
+                        if (!dbConfig.host || !dbConfig.database || !dbConfig.user) {
+                            testResults.push(`连接 "${connectionId}" 缺少必要的配置信息`);
+                        }
+                        if (dbConfig.port < 1 || dbConfig.port > 65535) {
+                            testResults.push(`连接 "${connectionId}" 端口号无效`);
+                        }
+                    }
+                }
+                if (testResults.length > 0) {
+                    res.json({ success: false, message: testResults.join('; ') });
+                }
+                else {
+                    res.json({ success: true, message: '所有配置验证通过' });
+                }
+            }
+            catch (error) {
+                logger.error('测试设置失败:', error);
+                res.status(500).json({
+                    error: '测试设置失败',
+                    message: error instanceof Error ? error.message : String(error)
+                });
+            }
         });
     }
     /**
