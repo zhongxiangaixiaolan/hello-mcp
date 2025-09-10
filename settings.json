@@ -1,10 +1,19 @@
 {
   "collectFeedback": {
-    "dialogTimeout": 60000,
+    "dialogTimeout": 999999999000,
     "autoOpenBrowser": true
   },
   "databaseOperation": {
     "defaultConnections": {
+      "test-postgresql": {
+        "type": "postgresql",
+        "host": "localhost",
+        "port": 5432,
+        "database": "test",
+        "user": "postgres",
+        "password": "1234",
+        "ssl": false
+      },
       "busnew-postgresql": {
         "type": "postgresql",
         "host": "localhost",
@@ -14,12 +23,12 @@
         "password": "1234",
         "ssl": false
       },
-      "test-postgresql": {
-        "type": "postgresql",
+      "parknew-mysql": {
+        "type": "mysql",
         "host": "localhost",
-        "port": 5432,
-        "database": "test",
-        "user": "postgres",
+        "port": 3306,
+        "database": "parknew",
+        "user": "root",
         "password": "1234",
         "ssl": false
       }

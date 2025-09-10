@@ -174,19 +174,23 @@ export class WebServer {
     // 获取当前文件的目录路径（ES模块兼容）
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const staticPath = path.resolve(__dirname, '../static');
+    // 指向构建后的静态文件目录
+    const staticPath = path.resolve(__dirname, '../../dist/static');
 
     // 静态文件服务 - 使用绝对路径
     this.app.use(express.static(staticPath));
 
-    // 主页路由
+    // Vue应用路由 - 所有页面路由都返回index.html，让Vue Router处理
     this.app.get('/', (req, res) => {
       res.sendFile('index.html', { root: staticPath });
     });
 
-    // 设置页面路由
+    this.app.get('/feedback', (req, res) => {
+      res.sendFile('index.html', { root: staticPath });
+    });
+
     this.app.get('/settings', (req, res) => {
-      res.sendFile('settings.html', { root: staticPath });
+      res.sendFile('index.html', { root: staticPath });
     });
 
     // API配置路由
