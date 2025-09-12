@@ -43,6 +43,7 @@
           />
         </div>
 
+
         <!-- 提交按钮 -->
         <div class="form-actions">
           <button
@@ -60,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
 import ImageUpload from './ImageUpload.vue'
 
@@ -210,6 +211,21 @@ const validateForm = () => {
   return errors
 }
 
+// 生命周期钩子
+onMounted(() => {
+  // 监听提交状态重置事件
+  const handleResetSubmission = () => {
+    console.log('收到重置提交状态事件')
+    isSubmitting.value = false
+  }
+
+  window.addEventListener('resetSubmissionState', handleResetSubmission)
+
+  onUnmounted(() => {
+    window.removeEventListener('resetSubmissionState', handleResetSubmission)
+  })
+})
+
 // 暴露方法给父组件
 defineExpose({
   submit: handleSubmit,
@@ -351,6 +367,7 @@ defineExpose({
   margin-left: 24px;
   line-height: 1.4;
 }
+
 
 /* 表单操作 */
 .form-actions {

@@ -31,6 +31,8 @@
 </template>
 
 <script>
+import { onMounted, onUnmounted } from 'vue'
+import { useStore } from 'vuex'
 import ConnectionStatus from './components/common/ConnectionStatus.vue'
 import NavigationBar from './components/layout/NavigationBar.vue'
 
@@ -41,8 +43,23 @@ export default {
     NavigationBar
   },
   setup() {
-    // 应用级别的状态和方法可以在这里定义
-    
+    const store = useStore()
+
+    // 在组件挂载时初始化Socket连接
+    onMounted(() => {
+      console.log('App组件已挂载，正在初始化Socket连接...')
+      store.dispatch('initializeSocket')
+    })
+
+    // 在组件卸载时清理Socket连接
+    onUnmounted(() => {
+      console.log('App组件即将卸载，正在清理Socket连接...')
+      const socket = store.getters.socket
+      if (socket) {
+        socket.disconnect()
+      }
+    })
+
     return {
       // 返回需要在模板中使用的数据和方法
     }

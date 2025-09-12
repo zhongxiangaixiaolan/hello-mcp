@@ -56,7 +56,7 @@ export function createDefaultConfig(): Config {
     apiKey: process.env['MCP_API_KEY'],
     apiBaseUrl: getEnvVar('MCP_API_BASE_URL', 'https://api.ssopen.top'),
     defaultModel: getEnvVar('MCP_DEFAULT_MODEL', 'gpt-4o-mini'),
-    webPort: getEnvNumber('MCP_WEB_PORT', 5050),
+    webPort: getEnvNumber('MCP_WEB_PORT', 5000),
     dialogTimeout: getEnvNumber('MCP_DIALOG_TIMEOUT', 60000),
     enableChat: getEnvBoolean('MCP_ENABLE_CHAT', true),
     corsOrigin: getEnvVar('MCP_CORS_ORIGIN', '*'),
@@ -94,7 +94,7 @@ export function createDefaultConfig(): Config {
       }
     },
     // 新增：设置界面配置
-    settingsPort: getEnvNumber('MCP_SETTINGS_PORT', 5050)
+    settingsPort: getEnvNumber('MCP_SETTINGS_PORT', 5000)
   };
 }
 

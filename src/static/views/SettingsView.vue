@@ -1,17 +1,38 @@
 <template>
   <div class="settings-view">
-    <div class="container">
-      <header>
-        <h1>🛠️ MCP工具设置</h1>
-        <p class="subtitle">配置 collect_feedback 和 database_operation 工具的默认参数</p>
-      </header>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-title">
+          <h1>设置</h1>
+          <p class="subtitle">配置工具参数和数据库连接</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" @click="saveSettings" :disabled="isLoading">
+            {{ isLoading ? '保存中...' : '保存' }}
+          </button>
+          <button class="btn btn-secondary" @click="resetSettings" :disabled="isLoading">
+            重置
+          </button>
+        </div>
+      </div>
+    </div>
 
-      <div class="settings-content">
-        <!-- collect_feedback 工具设置 -->
-        <section class="tool-section">
-          <h2>📝 collect_feedback 工具设置</h2>
-          <div class="form-group">
-            <label for="dialogTimeout">默认超时时间（秒）：</label>
+    <!-- 设置内容 -->
+    <div class="settings-content">
+      <!-- 反馈收集设置 -->
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>反馈收集</h2>
+          <p class="section-description">配置反馈收集工具的默认参数</p>
+        </div>
+        
+        <div class="settings-group">
+          <div class="setting-item">
+            <label for="dialogTimeout" class="setting-label">
+              <span class="label-text">超时时间</span>
+              <span class="label-detail">秒</span>
+            </label>
             <input 
               type="number" 
               id="dialogTimeout" 
@@ -19,38 +40,53 @@
               min="10" 
               max="3600" 
               step="1"
+              class="setting-input"
             >
-            <small>反馈收集的超时时间，超时后自动关闭</small>
           </div>
           
-          <div class="form-group">
-            <label for="autoOpenBrowser">自动打开浏览器：</label>
-            <input 
-              type="checkbox" 
-              id="autoOpenBrowser" 
-              v-model="settings.collectFeedback.autoOpenBrowser"
-            >
-            <small>收集反馈时是否自动打开浏览器</small>
+          <div class="setting-item">
+            <label class="setting-label">
+              <span class="label-text">自动打开浏览器</span>
+            </label>
+            <div class="toggle-switch">
+              <input 
+                type="checkbox" 
+                id="autoOpenBrowser" 
+                v-model="settings.collectFeedback.autoOpenBrowser"
+                class="toggle-input"
+              >
+              <label for="autoOpenBrowser" class="toggle-label"></label>
+            </div>
           </div>
-          
-          <div class="form-group">
-            <label for="defaultWorkSummary">默认工作汇报模板：</label>
+
+          <div class="setting-item full-width">
+            <label for="defaultWorkSummary" class="setting-label">
+              <span class="label-text">工作汇报模板</span>
+            </label>
             <textarea 
               id="defaultWorkSummary" 
               v-model="settings.collectFeedback.defaultWorkSummary" 
-              rows="3" 
-              placeholder="可选：设置默认的工作汇报模板"
+              placeholder="输入默认的工作汇报模板..."
+              class="setting-textarea"
+              rows="3"
             ></textarea>
-            <small>可选：为工作汇报设置默认模板</small>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <!-- database_operation 工具设置 -->
-        <section class="tool-section">
-          <h2>🗄️ database_operation 工具设置</h2>
-          
-          <div class="form-group">
-            <label for="defaultTimeout">默认查询超时（毫秒）：</label>
+      <!-- 数据库操作设置 -->
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>数据库操作</h2>
+          <p class="section-description">配置数据库查询的默认参数</p>
+        </div>
+        
+        <div class="settings-group">
+          <div class="setting-item">
+            <label for="defaultTimeout" class="setting-label">
+              <span class="label-text">查询超时</span>
+              <span class="label-detail">毫秒</span>
+            </label>
             <input 
               type="number" 
               id="defaultTimeout" 
@@ -58,12 +94,14 @@
               min="1000" 
               max="300000" 
               step="1000"
+              class="setting-input"
             >
-            <small>数据库查询的默认超时时间</small>
           </div>
           
-          <div class="form-group">
-            <label for="defaultMaxRows">默认最大行数：</label>
+          <div class="setting-item">
+            <label for="defaultMaxRows" class="setting-label">
+              <span class="label-text">最大行数</span>
+            </label>
             <input 
               type="number" 
               id="defaultMaxRows" 
@@ -71,118 +109,139 @@
               min="1" 
               max="100000" 
               step="1"
+              class="setting-input"
             >
-            <small>查询结果的默认最大行数限制</small>
           </div>
-          
-          <div class="form-group">
-            <label for="defaultSchema">默认模式名：</label>
+
+          <div class="setting-item">
+            <label for="defaultSchema" class="setting-label">
+              <span class="label-text">默认模式</span>
+              <span class="label-detail">PostgreSQL</span>
+            </label>
             <input 
               type="text" 
               id="defaultSchema" 
               v-model="settings.databaseOperation.defaultSchema" 
-              placeholder="可选：PostgreSQL默认模式"
+              placeholder="public"
+              class="setting-input"
             >
-            <small>可选：PostgreSQL数据库的默认模式名</small>
           </div>
+        </div>
+      </div>
 
-          <h3>🔗 默认数据库连接</h3>
-          <div id="connections-container">
-            <div class="connections-list">
-              <!-- 数据库连接列表 -->
-              <div 
-                v-for="(connection, connectionId) in settings.databaseOperation.defaultConnections" 
-                :key="connectionId" 
-                class="connection-item"
-              >
-                <div class="connection-header">
-                  <h4>数据库连接</h4>
-                  <button 
-                    type="button" 
-                    class="remove-connection" 
-                    @click="removeConnection(connectionId)"
-                  >
-                    ❌
-                  </button>
-                </div>
-                <div class="connection-form">
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>连接ID：</label>
-                      <input 
-                        type="text" 
-                        v-model="connection.id" 
-                        placeholder="例如：main-db" 
-                        required
-                        @input="updateConnectionId(connectionId, $event.target.value)"
-                      >
-                    </div>
-                    <div class="form-group">
-                      <label>数据库类型：</label>
-                      <select v-model="connection.type" required @change="updateDefaultPort(connection)">
-                        <option value="mysql">MySQL</option>
-                        <option value="postgresql">PostgreSQL</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>主机：</label>
-                      <input type="text" v-model="connection.host" placeholder="localhost" required>
-                    </div>
-                    <div class="form-group">
-                      <label>端口：</label>
-                      <input type="number" v-model.number="connection.port" placeholder="3306" min="1" max="65535" required>
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>数据库名：</label>
-                      <input type="text" v-model="connection.database" placeholder="数据库名" required>
-                    </div>
-                    <div class="form-group">
-                      <label>用户名：</label>
-                      <input type="text" v-model="connection.user" placeholder="用户名" required>
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>密码：</label>
-                      <input type="password" v-model="connection.password" placeholder="密码" required>
-                    </div>
-                    <div class="form-group">
-                      <label>启用SSL：</label>
-                      <input type="checkbox" v-model="connection.ssl">
-                    </div>
-                  </div>
-                </div>
+      <!-- 数据库连接管理 -->
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>数据库连接</h2>
+          <p class="section-description">管理数据库连接配置</p>
+          <div class="section-actions">
+            <button class="btn btn-outline" @click="openConnectionModal">
+              管理连接
+            </button>
+            <button class="btn btn-outline" @click="testAllConnections" :disabled="isLoading">
+              测试所有
+            </button>
+          </div>
+        </div>
+        
+        <!-- 连接统计 -->
+        <div class="connection-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ Object.keys(settings.databaseOperation.defaultConnections).length }}</span>
+            <span class="stat-label">已配置</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ connectedCount }}</span>
+            <span class="stat-label">活跃</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ mysqlCount }}</span>
+            <span class="stat-label">MySQL</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ postgresCount }}</span>
+            <span class="stat-label">PostgreSQL</span>
+          </div>
+        </div>
+        
+        <!-- 连接列表 -->
+        <div class="connection-list" v-if="Object.keys(settings.databaseOperation.defaultConnections).length > 0">
+          <div 
+            v-for="(connection, connectionId) in settings.databaseOperation.defaultConnections" 
+            :key="connectionId" 
+            class="connection-item"
+            @click="editConnection(connectionId)"
+          >
+            <div class="connection-info">
+              <div class="connection-name">{{ connection.id }}</div>
+              <div class="connection-details">{{ connection.host }}:{{ connection.port }}/{{ connection.database }}</div>
+            </div>
+            <div class="connection-meta">
+              <span class="connection-type">{{ connection.type.toUpperCase() }}</span>
+              <div class="connection-status">
+                <span :class="['status-indicator', getConnectionStatus(connectionId)]"></span>
               </div>
             </div>
-            <button type="button" class="btn btn-secondary" @click="addConnection">➕ 添加连接</button>
+            <button 
+              type="button" 
+              class="test-button" 
+              @click.stop="testConnection(connectionId)"
+              :disabled="isLoading"
+            >
+              测试
+            </button>
           </div>
-        </section>
+        </div>
+        
+        <div v-else class="empty-state">
+          <div class="empty-icon">🔌</div>
+          <div class="empty-title">暂无数据库连接</div>
+          <div class="empty-description">添加数据库连接以开始使用数据库操作功能</div>
+          <button type="button" class="btn btn-primary" @click="openConnectionModal">
+            添加连接
+          </button>
+        </div>
       </div>
 
-      <div class="actions">
-        <button class="btn btn-primary" @click="saveSettings" :disabled="isLoading">
-          {{ isLoading ? '保存中...' : '💾 保存设置' }}
-        </button>
-        <button class="btn btn-warning" @click="resetSettings" :disabled="isLoading">🔄 重置为默认</button>
-        <button class="btn btn-info" @click="testSettings" :disabled="isLoading">🧪 测试配置</button>
-      </div>
-
-      <div v-if="statusMessage.text" :class="['status-message', statusMessage.type]">
-        {{ statusMessage.text }}
-      </div>
+      <!-- 高级设置 -->
+      <AdvancedSettings />
     </div>
+
+    <!-- 状态消息 -->
+    <div v-if="statusMessage.text" :class="['status-message', statusMessage.type]">
+      {{ statusMessage.text }}
+    </div>
+
+    <!-- 数据库连接管理弹窗 -->
+    <DatabaseConnectionModal 
+      v-if="showConnectionModal"
+      :connections="settings.databaseOperation.defaultConnections"
+      :editing-connection-id="editingConnectionId"
+      @close="closeConnectionModal"
+      @save="saveConnection"
+      @delete="deleteConnection"
+      @test="testConnection"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import DatabaseConnectionModal from '../components/database/DatabaseConnectionModal.vue'
+import SettingsCard from '../components/settings/SettingsCard.vue'
+import Collapse from '../components/common/Collapse.vue'
+import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
 
 // 响应式数据
 const isLoading = ref(false)
+const showConnectionModal = ref(false)
+const editingConnectionId = ref(null)
+const connectionStatuses = reactive({})
+
+// 折叠面板状态
+const feedbackExpanded = ref(false)
+const databaseExpanded = ref(false)
+
 const statusMessage = reactive({
   text: '',
   type: ''
@@ -203,11 +262,24 @@ const settings = reactive({
   }
 })
 
+// 计算属性
+const connectedCount = computed(() => {
+  return Object.keys(connectionStatuses).filter(id => connectionStatuses[id] === 'connected').length
+})
+
+const mysqlCount = computed(() => {
+  return Object.values(settings.databaseOperation.defaultConnections).filter(conn => conn.type === 'mysql').length
+})
+
+const postgresCount = computed(() => {
+  return Object.values(settings.databaseOperation.defaultConnections).filter(conn => conn.type === 'postgresql').length
+})
+
 // 方法
 const showStatus = (message, type) => {
   statusMessage.text = message
   statusMessage.type = type
-  
+
   if (type !== 'error') {
     setTimeout(() => {
       statusMessage.text = ''
@@ -216,27 +288,123 @@ const showStatus = (message, type) => {
   }
 }
 
+// 折叠面板切换方法
+const toggleFeedbackSettings = () => {
+  feedbackExpanded.value = !feedbackExpanded.value
+}
+
+const toggleDatabaseSettings = () => {
+  databaseExpanded.value = !databaseExpanded.value
+}
+
+const getConnectionStatus = (connectionId) => {
+  return connectionStatuses[connectionId] || 'unknown'
+}
+
+const openConnectionModal = () => {
+  editingConnectionId.value = null
+  showConnectionModal.value = true
+}
+
+const closeConnectionModal = () => {
+  showConnectionModal.value = false
+  editingConnectionId.value = null
+}
+
+const editConnection = (connectionId) => {
+  editingConnectionId.value = connectionId
+  showConnectionModal.value = true
+}
+
+const saveConnection = (connectionData) => {
+  if (editingConnectionId.value) {
+    // 编辑现有连接
+    const oldId = editingConnectionId.value
+    if (connectionData.id !== oldId) {
+      // ID发生变化，需要删除旧的并创建新的
+      delete settings.databaseOperation.defaultConnections[oldId]
+    }
+  }
+
+  settings.databaseOperation.defaultConnections[connectionData.id] = connectionData
+  closeConnectionModal()
+  showStatus('连接配置已保存', 'success')
+}
+
+const deleteConnection = (connectionId) => {
+  delete settings.databaseOperation.defaultConnections[connectionId]
+  delete connectionStatuses[connectionId]
+  closeConnectionModal()
+  showStatus('连接已删除', 'success')
+}
+
+const testConnection = async (connectionId) => {
+  try {
+    isLoading.value = true
+    connectionStatuses[connectionId] = 'testing'
+
+    const connection = settings.databaseOperation.defaultConnections[connectionId]
+    const response = await fetch('/api/database/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(connection)
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      connectionStatuses[connectionId] = 'connected'
+      showStatus(`连接 ${connectionId} 测试成功`, 'success')
+    } else {
+      connectionStatuses[connectionId] = 'error'
+      showStatus(`连接 ${connectionId} 测试失败: ${result.message}`, 'error')
+    }
+  } catch (error) {
+    connectionStatuses[connectionId] = 'error'
+    showStatus(`连接 ${connectionId} 测试失败: ${error.message}`, 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const testAllConnections = async () => {
+  const connections = Object.keys(settings.databaseOperation.defaultConnections)
+  if (connections.length === 0) {
+    showStatus('没有可测试的连接', 'warning')
+    return
+  }
+
+  showStatus('正在测试所有连接...', 'info')
+
+  for (const connectionId of connections) {
+    await testConnection(connectionId)
+  }
+
+  showStatus('所有连接测试完成', 'success')
+}
+
 const loadSettings = async () => {
   try {
     showStatus('正在加载设置...', 'info')
-    
+
     const response = await fetch('/api/settings')
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
-    
+
     const loadedSettings = await response.json()
-    
-    // 更新设置数据
-    settings.collectFeedback.dialogTimeout = Math.floor((loadedSettings.collectFeedback?.dialogTimeout || 60000) / 1000)
-    settings.collectFeedback.autoOpenBrowser = loadedSettings.collectFeedback?.autoOpenBrowser !== false
+
+    settings.collectFeedback.dialogTimeout = (loadedSettings.collectFeedback?.dialogTimeout || 60000) / 1000
+    settings.collectFeedback.autoOpenBrowser = loadedSettings.collectFeedback?.autoOpenBrowser ?? true
     settings.collectFeedback.defaultWorkSummary = loadedSettings.collectFeedback?.defaultWorkSummary || ''
-    
+
     settings.databaseOperation.defaultTimeout = loadedSettings.databaseOperation?.defaultTimeout || 30000
     settings.databaseOperation.defaultMaxRows = loadedSettings.databaseOperation?.defaultMaxRows || 1000
     settings.databaseOperation.defaultSchema = loadedSettings.databaseOperation?.defaultSchema || ''
     settings.databaseOperation.defaultConnections = loadedSettings.databaseOperation?.defaultConnections || {}
-    
+
     showStatus('设置加载成功', 'success')
   } catch (error) {
     console.error('加载设置失败:', error)
@@ -248,7 +416,7 @@ const saveSettings = async () => {
   try {
     isLoading.value = true
     showStatus('正在保存设置...', 'info')
-    
+
     const settingsToSave = {
       collectFeedback: {
         dialogTimeout: settings.collectFeedback.dialogTimeout * 1000,
@@ -262,7 +430,7 @@ const saveSettings = async () => {
         defaultSchema: settings.databaseOperation.defaultSchema || undefined
       }
     }
-    
+
     const response = await fetch('/api/settings', {
       method: 'POST',
       headers: {
@@ -272,8 +440,7 @@ const saveSettings = async () => {
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || `HTTP ${response.status}`)
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     showStatus('设置保存成功！', 'success')
@@ -286,106 +453,27 @@ const saveSettings = async () => {
 }
 
 const resetSettings = async () => {
-  if (!confirm('确定要重置所有设置为默认值吗？此操作不可撤销。')) {
-    return
-  }
+  if (confirm('确定要重置所有设置为默认值吗？此操作无法撤销。')) {
+    try {
+      isLoading.value = true
+      showStatus('正在重置设置...', 'info')
 
-  try {
-    isLoading.value = true
-    showStatus('正在重置设置...', 'info')
-    
-    const response = await fetch('/api/settings/reset', {
-      method: 'POST'
-    })
+      const response = await fetch('/api/settings/reset', {
+        method: 'POST'
+      })
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    await loadSettings()
-    showStatus('设置已重置为默认值', 'success')
-  } catch (error) {
-    console.error('重置设置失败:', error)
-    showStatus(`重置设置失败: ${error.message}`, 'error')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const testSettings = async () => {
-  try {
-    isLoading.value = true
-    showStatus('正在测试配置...', 'info')
-    
-    const settingsToTest = {
-      collectFeedback: {
-        dialogTimeout: settings.collectFeedback.dialogTimeout * 1000,
-        autoOpenBrowser: settings.collectFeedback.autoOpenBrowser,
-        defaultWorkSummary: settings.collectFeedback.defaultWorkSummary || undefined
-      },
-      databaseOperation: {
-        defaultConnections: settings.databaseOperation.defaultConnections,
-        defaultTimeout: settings.databaseOperation.defaultTimeout,
-        defaultMaxRows: settings.databaseOperation.defaultMaxRows,
-        defaultSchema: settings.databaseOperation.defaultSchema || undefined
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
+
+      await loadSettings()
+      showStatus('设置已重置为默认值', 'success')
+    } catch (error) {
+      console.error('重置设置失败:', error)
+      showStatus(`重置设置失败: ${error.message}`, 'error')
+    } finally {
+      isLoading.value = false
     }
-    
-    const response = await fetch('/api/settings/test', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(settingsToTest)
-    })
-
-    const result = await response.json()
-    
-    if (result.success) {
-      showStatus('配置测试通过！', 'success')
-    } else {
-      showStatus(`配置测试失败: ${result.message}`, 'error')
-    }
-  } catch (error) {
-    console.error('测试配置失败:', error)
-    showStatus(`测试配置失败: ${error.message}`, 'error')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const addConnection = () => {
-  const newConnectionId = `connection-${Date.now()}`
-  settings.databaseOperation.defaultConnections[newConnectionId] = {
-    id: newConnectionId,
-    type: 'mysql',
-    host: 'localhost',
-    port: 3306,
-    database: '',
-    user: '',
-    password: '',
-    ssl: false
-  }
-}
-
-const removeConnection = (connectionId) => {
-  delete settings.databaseOperation.defaultConnections[connectionId]
-}
-
-const updateConnectionId = (oldId, newId) => {
-  if (newId && newId !== oldId) {
-    const connection = settings.databaseOperation.defaultConnections[oldId]
-    connection.id = newId
-    settings.databaseOperation.defaultConnections[newId] = connection
-    delete settings.databaseOperation.defaultConnections[oldId]
-  }
-}
-
-const updateDefaultPort = (connection) => {
-  if (connection.type === 'mysql') {
-    connection.port = 3306
-  } else if (connection.type === 'postgresql') {
-    connection.port = 5432
   }
 }
 
@@ -396,293 +484,561 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* VS Code 风格的深色主题设置页面 */
+/* 苹果简约风格设置界面 */
 .settings-view {
   min-height: calc(100vh - 200px);
-  background: #1e1e1e;
-  color: #cccccc;
-  padding: 20px;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  padding: 0;
 }
 
-.container {
-  max-width: 1000px;
+/* 页面头部 */
+.page-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5e7;
+  padding: 24px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+}
+
+.header-content {
+  max-width: 800px;
   margin: 0 auto;
-  background: #252526;
-  border: 1px solid #3e3e42;
-  border-radius: 6px;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-header {
-  background: #2d2d30;
-  border-bottom: 1px solid #3e3e42;
-  color: #ffffff;
-  padding: 30px;
-  text-align: center;
-}
-
-header h1 {
-  font-size: 24px;
-  margin-bottom: 10px;
+.header-title h1 {
+  font-size: 28px;
   font-weight: 600;
-  color: #4ec9b0;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #cccccc;
-  opacity: 0.9;
+  font-size: 15px;
+  color: #86868b;
+  margin: 0;
+  font-weight: 400;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 设置内容 */
 .settings-content {
-  padding: 30px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
-.tool-section {
-  margin-bottom: 40px;
-  border: 1px solid #3e3e42;
-  border-radius: 6px;
-  padding: 25px;
-  background: #1e1e1e;
+/* 设置分组 */
+.settings-section {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e5e7;
+  overflow: hidden;
 }
 
-.tool-section h2 {
-  color: #4ec9b0;
-  margin-bottom: 20px;
-  font-size: 18px;
-  border-bottom: 2px solid #4ec9b0;
-  padding-bottom: 10px;
+.section-header {
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #e5e5e7;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.tool-section h3 {
-  color: #569cd6;
-  margin: 25px 0 15px 0;
-  font-size: 16px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
+.section-header h2 {
+  font-size: 20px;
   font-weight: 600;
-  color: #cccccc;
-  font-size: 13px;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 8px 12px;
-  background: #37373d;
-  border: 1px solid #3e3e42;
-  border-radius: 4px;
-  color: #cccccc;
+.section-description {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.settings-group {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #f2f2f7;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item.full-width {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.setting-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.label-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.label-detail {
   font-size: 13px;
+  color: #86868b;
+  font-weight: 400;
+}
+
+/* 输入框样式 */
+.setting-input,
+.setting-textarea {
+  background: #f2f2f7;
+  border: 1px solid #d1d1d6;
+  border-radius: 8px;
+  color: #1d1d1f;
+  padding: 12px 16px;
+  font-size: 15px;
+  transition: all 0.2s ease;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  min-width: 120px;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.setting-input:focus,
+.setting-textarea:focus {
   outline: none;
-  border-color: #007acc;
-  box-shadow: 0 0 0 1px #007acc;
+  border-color: #007aff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-.form-group input[type="checkbox"] {
-  width: auto;
-  margin-right: 8px;
+.setting-textarea {
+  resize: vertical;
+  min-height: 80px;
+  width: 100%;
 }
 
-.form-group small {
+/* 开关样式 */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-label {
   display: block;
-  margin-top: 5px;
-  color: #858585;
-  font-size: 11px;
+  width: 44px;
+  height: 26px;
+  background: #d1d1d6;
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-bottom: 15px;
+.toggle-label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.connections-list {
-  margin-bottom: 20px;
+.toggle-input:checked + .toggle-label {
+  background: #007aff;
+}
+
+.toggle-input:checked + .toggle-label::after {
+  transform: translateX(18px);
+}
+
+/* 按钮样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-height: 32px;
+}
+
+.btn-primary {
+  background: #007aff;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #0056cc;
+}
+
+.btn-secondary {
+  background: #f2f2f7;
+  color: #1d1d1f;
+  border: 1px solid #d1d1d6;
+}
+
+.btn-secondary:hover {
+  background: #e5e5e7;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #007aff;
+  border: 1px solid #007aff;
+}
+
+.btn-outline:hover {
+  background: #007aff;
+  color: #ffffff;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 连接管理样式 */
+.connection-stats {
+  display: flex;
+  gap: 24px;
+  padding: 20px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e5e7;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-number {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.connection-list {
+  padding: 0;
 }
 
 .connection-item {
-  border: 1px solid #3e3e42;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  background: #252526;
-}
-
-.connection-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background: #2d2d30;
-  border-bottom: 1px solid #3e3e42;
-}
-
-.connection-header h4 {
-  color: #cccccc;
-  margin: 0;
-  font-size: 14px;
-}
-
-.connection-form {
-  padding: 20px;
-}
-
-.remove-connection {
-  background: #f14c4c;
-  color: #ffffff;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 3px;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f2f2f7;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.connection-item:hover {
+  background: #f8f9fa;
+}
+
+.connection-item:last-child {
+  border-bottom: none;
+}
+
+.connection-info {
+  flex: 1;
+}
+
+.connection-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-bottom: 2px;
+}
+
+.connection-details {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.connection-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 12px;
+}
+
+.connection-type {
   font-size: 12px;
-  transition: background-color 0.2s ease;
+  color: #86868b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.remove-connection:hover {
-  background: #ff5555;
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
+.status-indicator.connected {
+  background: #30d158;
+}
+
+.status-indicator.error {
+  background: #ff3b30;
+}
+
+.status-indicator.testing {
+  background: #ff9500;
+  animation: pulse 1.5s infinite;
+}
+
+.status-indicator.unknown {
+  background: #d1d1d6;
+}
+
+.test-button {
+  background: transparent;
+  color: #007aff;
+  border: 1px solid #007aff;
+  border-radius: 6px;
+  padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-right: 10px;
-  text-transform: none;
-  letter-spacing: normal;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #4ec9b0;
-  color: #1e1e1e;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #5dd4b8;
-}
-
-.btn-secondary {
-  background: #37373d;
-  color: #cccccc;
-  border: 1px solid #3e3e42;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #4a4a4f;
-  border-color: #569cd6;
-}
-
-.btn-warning {
-  background: #f9c74f;
-  color: #1e1e1e;
-}
-
-.btn-warning:hover:not(:disabled) {
-  background: #f8d866;
-}
-
-.btn-info {
-  background: #569cd6;
+.test-button:hover {
+  background: #007aff;
   color: #ffffff;
 }
 
-.btn-info:hover:not(:disabled) {
-  background: #6bb6ff;
+.test-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.actions {
-  padding: 30px;
-  background: #2d2d30;
-  border-top: 1px solid #3e3e42;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 空状态样式 */
+.empty-state {
   text-align: center;
+  padding: 48px 24px;
+  color: #86868b;
 }
 
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+/* 状态消息样式 */
 .status-message {
-  padding: 15px 30px;
-  margin: 0;
-  text-align: center;
+  margin: 16px 32px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 500;
-  font-size: 13px;
-  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease;
 }
 
 .status-message.success {
-  background: #1e3a1e;
-  color: #4ec9b0;
-  border-top: 3px solid #4ec9b0;
+  background: #d1f7c4;
+  color: #1d4ed8;
+  border: 1px solid #86efac;
 }
 
 .status-message.error {
-  background: #3e1e1e;
-  color: #f14c4c;
-  border-top: 3px solid #f14c4c;
+  background: #fecaca;
+  color: #dc2626;
+  border: 1px solid #f87171;
+}
+
+.status-message.warning {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fbbf24;
 }
 
 .status-message.info {
-  background: #1e2a3e;
-  color: #569cd6;
-  border-top: 3px solid #569cd6;
+  background: #dbeafe;
+  color: #2563eb;
+  border: 1px solid #93c5fd;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .settings-view {
-    padding: 10px;
+    padding: 0;
   }
 
-  .container {
-    margin: 0;
-    border-radius: 4px;
+  .page-header {
+    padding: 20px 16px;
   }
 
-  header {
-    padding: 20px;
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
 
-  header h1 {
-    font-size: 20px;
+  .header-actions {
+    justify-content: center;
   }
 
   .settings-content {
-    padding: 20px;
+    padding: 16px;
+    gap: 24px;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 20px 16px 12px 16px;
   }
 
-  .actions {
-    padding: 20px;
+  .section-actions {
+    justify-content: center;
   }
 
-  .btn {
-    display: block;
-    width: 100%;
-    margin: 5px 0;
+  .settings-group {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .connection-stats {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .connection-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .connection-meta {
+    justify-content: space-between;
+    margin-right: 0;
+  }
+
+  .test-button {
+    align-self: flex-end;
+  }
+
+  .status-message {
+    margin: 12px 16px;
   }
 }
+
+@media (max-width: 480px) {
+  .connection-stats {
+    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+}
+
+
+
+
+
 </style>

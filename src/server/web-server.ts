@@ -241,6 +241,11 @@ export class WebServer {
 
       logger.info(`创建测试会话: ${sessionId}`);
 
+      // 🔧 新增：通知所有连接的客户端有新会话可用
+      this.io.emit('new_session_available', {
+        message: '新的反馈会话已创建，正在分配...'
+      });
+
       res.json({
         success: true,
         session_id: sessionId,
@@ -601,6 +606,15 @@ export class WebServer {
         shouldCloseAfterSubmit: feedbackData.shouldCloseAfterSubmit || false
       });
 
+      // 如果需要关闭窗口，发送关闭指令
+      if (feedbackData.shouldCloseAfterSubmit) {
+        setTimeout(() => {
+          socket.emit('close_window', {
+            message: '反馈已提交，窗口将关闭'
+          });
+        }, 1000); // 延迟1秒发送关闭指令
+      }
+
       // 完成反馈收集
       if (session.resolve) {
         session.resolve(session.feedback);
@@ -618,7 +632,14 @@ export class WebServer {
   /**
    * 收集用户反馈
    */
-  async collectFeedback(workSummary: string, timeoutSeconds: number): Promise<FeedbackData[]> {
+  async collectFeedback(
+    workSummary: string,
+    timeoutSeconds: number,
+    options?: {
+      shouldCloseAfterSubmit?: boolean;  // 是否在提交后关闭窗口
+      allowUserOverride?: boolean;       // 是否允许用户覆盖设置
+    }
+  ): Promise<FeedbackData[]> {
     const sessionId = this.generateSessionId();
 
     logger.info(`创建反馈会话: ${sessionId}, 超时: ${timeoutSeconds}秒`);

@@ -170,12 +170,23 @@ const store = createStore({
         state.socket.disconnect()
       }
 
-      const socket = io({
+      // 获取当前页面的协议和主机
+      const protocol = window.location.protocol === 'https:' ? 'https' : 'http'
+      const host = window.location.hostname
+      const port = window.location.port || (protocol === 'https' ? '443' : '80')
+      const serverUrl = `${protocol}://${host}:${port}`
+
+      console.log('正在连接Socket.IO服务器:', serverUrl)
+
+      const socket = io(serverUrl, {
         transports: ['websocket', 'polling'],
-        timeout: 5000,
+        timeout: 10000,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        maxReconnectionAttempts: 10,
+        forceNew: true
       })
 
       commit('SET_SOCKET', socket)
@@ -236,6 +247,16 @@ const store = createStore({
         })
         // 清理超时相关状态
         dispatch('clearSessionTimeout')
+
+        // 🔧 新增：重置所有组件的提交状态
+        dispatch('resetSubmissionState')
+
+        // 清理会话状态，停止自动刷新
+        commit('SET_FEEDBACK_SESSION', null)
+        commit('SET_WORK_SUMMARY', null)
+
+        // 通知组件停止自动刷新
+        dispatch('stopAutoRefresh')
       })
 
       // 反馈提交错误
@@ -245,6 +266,20 @@ const store = createStore({
           type: 'error',
           text: data.error || '反馈提交失败'
         })
+      })
+
+      // 窗口关闭事件
+      socket.on('close_window', (data) => {
+        console.log('收到窗口关闭指令:', data)
+        dispatch('addStatusMessage', {
+          type: 'info',
+          text: data.message || '反馈已提交，窗口将关闭'
+        })
+
+        // 延迟关闭窗口，让用户看到消息
+        setTimeout(() => {
+          window.close()
+        }, 2000)
       })
 
       // 工作汇报数据
@@ -288,19 +323,59 @@ const store = createStore({
         if (data.session_id) {
           commit('SET_FEEDBACK_SESSION', data.session_id)
 
+          // 如果有工作汇报数据，直接设置
+          if (data.work_summary) {
+            commit('SET_WORK_SUMMARY', data.work_summary)
+            commit('SET_LAST_WORK_SUMMARY', data.work_summary)
+          } else {
+            // 没有工作汇报数据，主动请求
+            setTimeout(() => {
+              if (state.socket && state.isConnected) {
+                state.socket.emit('get_work_summary', { feedback_session_id: data.session_id })
+              }
+            }, 500)
+          }
+
           // 启动超时自动提交计时器
           const timeoutToUse = data.timeout || 300000 // 默认5分钟
           const frontendTimeout = Math.max(timeoutToUse - 2000, timeoutToUse * 0.9)
           dispatch('startSessionTimeout', frontendTimeout)
+
+          // 显示成功消息
+          dispatch('addStatusMessage', {
+            type: 'success',
+            text: '已连接到反馈会话，可以开始提交反馈'
+          })
         }
       })
 
       // 无活跃会话
       socket.on('no_active_session', (data) => {
         console.log('无活跃会话:', data)
+        dispatch('addStatusMessage', {
+          type: 'info',
+          text: '当前无活跃的反馈会话。请通过MCP工具调用创建反馈会话，或等待AI创建新的反馈任务。'
+        })
       })
 
+      // 🔧 新增：监听新会话可用通知
+      socket.on('new_session_available', (data) => {
+        console.log('收到新会话通知:', data)
 
+        // 显示通知消息
+        dispatch('addStatusMessage', {
+          type: 'info',
+          text: data.message || '新会话已创建'
+        })
+
+        // 延迟500ms后重新请求会话分配
+        setTimeout(() => {
+          if (state.socket && state.isConnected) {
+            console.log('重新请求会话分配...')
+            state.socket.emit('request_session')
+          }
+        }, 500)
+      })
 
       return socket
     },
@@ -393,6 +468,18 @@ const store = createStore({
 
       // 这里可以添加自动提交逻辑
       // dispatch('submitFeedback', { /* 自动提交数据 */ })
+    },
+
+    // 停止自动刷新
+    stopAutoRefresh() {
+      // 发送全局事件，通知所有组件停止自动刷新
+      window.dispatchEvent(new CustomEvent('stopAutoRefresh'))
+    },
+
+    // 重置提交状态
+    resetSubmissionState() {
+      // 发送全局事件，通知所有组件重置提交状态
+      window.dispatchEvent(new CustomEvent('resetSubmissionState'))
     },
 
     // 添加状态消息的便捷方法

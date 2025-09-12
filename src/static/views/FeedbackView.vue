@@ -26,6 +26,26 @@
           <div v-if="confirmDialogData.images && confirmDialogData.images.length > 0" class="images-count">
             包含 {{ confirmDialogData.images.length }} 张图片
           </div>
+          
+          <!-- 提交后操作选择 -->
+          <div class="window-control-section">
+            <label class="form-label">提交后操作</label>
+            <div class="window-control-options">
+              <label class="radio-label">
+                <input type="radio" v-model="windowAction" value="keep-open" :disabled="isSubmitting">
+                <span class="radio-custom"></span>
+                <span class="radio-text">保持窗口打开（推荐）</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" v-model="windowAction" value="close" :disabled="isSubmitting">
+                <span class="radio-custom"></span>
+                <span class="radio-text">提交后关闭窗口</span>
+              </label>
+            </div>
+            <div class="window-control-hint">
+              选择"保持窗口打开"可以继续查看AI的后续工作汇报
+            </div>
+          </div>
         </div>
         <div class="dialog-actions">
           <LoadingButton
@@ -50,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
 import WorkSummaryCard from '../components/feedback/WorkSummaryCard.vue'
 import FeedbackForm from '../components/feedback/FeedbackForm.vue'
@@ -62,6 +82,7 @@ const store = useStore()
 // 响应式数据
 const showConfirmDialog = ref(false)
 const isSubmitting = ref(false)
+const windowAction = ref('keep-open') // 默认保持窗口打开
 const confirmDialogData = ref({
   text: '',
   images: []
@@ -95,12 +116,19 @@ const confirmSubmit = async () => {
   try {
     isSubmitting.value = true
 
+    // 🔧 修复：保留原始feedbackData的所有参数，并添加窗口操作参数
     const feedbackData = {
-      text: confirmDialogData.value.text,
-      images: confirmDialogData.value.images,
+      ...confirmDialogData.value, // 保留所有原始参数
       sessionId: store.getters.feedbackSessionId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      shouldCloseAfterSubmit: windowAction.value === 'close' // 添加窗口控制参数
     }
+
+    console.log('确认提交反馈，包含窗口控制参数:', {
+      shouldCloseAfterSubmit: feedbackData.shouldCloseAfterSubmit,
+      textLength: feedbackData.text?.length || 0,
+      imageCount: feedbackData.images?.length || 0
+    })
 
     await store.dispatch('submitFeedback', feedbackData)
 
@@ -116,6 +144,21 @@ const confirmSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
+// 生命周期钩子
+onMounted(() => {
+  // 监听提交状态重置事件
+  const handleResetSubmission = () => {
+    console.log('FeedbackView收到重置提交状态事件')
+    isSubmitting.value = false
+  }
+
+  window.addEventListener('resetSubmissionState', handleResetSubmission)
+
+  onUnmounted(() => {
+    window.removeEventListener('resetSubmissionState', handleResetSubmission)
+  })
+})
 </script>
 
 <style scoped>
@@ -200,6 +243,89 @@ const confirmSubmit = async () => {
   padding: 16px 20px;
   background: #2d2d30;
   border-top: 1px solid #3e3e42;
+}
+
+/* 窗口控制选择样式 */
+.window-control-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #3e3e42;
+}
+
+.form-label {
+  display: block;
+  color: #cccccc;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.window-control-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #cccccc;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.radio-label:hover {
+  color: #ffffff;
+}
+
+.radio-label input[type="radio"] {
+  display: none;
+}
+
+.radio-custom {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #3e3e42;
+  border-radius: 50%;
+  background: #1e1e1e;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom {
+  border-color: #007acc;
+  background: #007acc;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.radio-label input[type="radio"]:disabled + .radio-custom {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio-text {
+  flex: 1;
+}
+
+.window-control-hint {
+  color: #858585;
+  font-size: 11px;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
 

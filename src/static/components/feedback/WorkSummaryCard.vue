@@ -92,25 +92,92 @@ const renderedContent = computed(() => {
 // 方法
 const handleRefresh = async () => {
   if (isRefreshing.value) return
-  
+
   isRefreshing.value = true
-  
+
   try {
     emit('refresh')
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 这里应该调用实际的API获取工作汇报
-    // const response = await fetchWorkSummary()
-    // store.dispatch('updateWorkSummary', response.data)
-    
+
+    // 检查Socket连接状态
+    const socket = store.getters.socket
+    const connectionStatus = store.getters.connectionStatus
+    const feedbackSessionId = store.getters.feedbackSessionId
+
+    // 如果没有Socket实例，等待连接建立
+    if (!socket) {
+      console.log('Socket未初始化，等待连接建立...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // 重新获取Socket实例
+      const newSocket = store.getters.socket
+      const newConnectionStatus = store.getters.connectionStatus
+
+      if (!newSocket || !newConnectionStatus.isConnected) {
+        throw new Error('Socket连接未建立，请稍后重试')
+      }
+    }
+
+    // 再次检查连接状态
+    const finalSocket = store.getters.socket
+    const finalConnectionStatus = store.getters.connectionStatus
+
+    if (!finalSocket) {
+      throw new Error('Socket连接不可用')
+    }
+
+    if (feedbackSessionId && finalConnectionStatus.isConnected) {
+      // 有会话ID，请求工作汇报数据
+      console.log('请求会话工作汇报:', feedbackSessionId)
+      finalSocket.emit('get_work_summary', { feedback_session_id: feedbackSessionId })
+
+      // 等待响应或超时
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('获取工作汇报超时'))
+        }, 5000)
+
+        const handleWorkSummary = (data) => {
+          clearTimeout(timeout)
+          finalSocket.off('work_summary_data', handleWorkSummary)
+          finalSocket.off('feedback_error', handleError)
+          console.log('收到工作汇报数据:', data)
+          resolve(data)
+        }
+
+        const handleError = (error) => {
+          clearTimeout(timeout)
+          finalSocket.off('work_summary_data', handleWorkSummary)
+          finalSocket.off('feedback_error', handleError)
+          reject(new Error(error.error || '获取工作汇报失败'))
+        }
+
+        finalSocket.on('work_summary_data', handleWorkSummary)
+        finalSocket.on('feedback_error', handleError)
+      })
+    } else if (finalConnectionStatus.isConnected) {
+      // 没有会话ID，请求最新工作汇报
+      console.log('请求最新工作汇报')
+      store.dispatch('requestLatestSummary')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    } else {
+      // 连接状态不佳，尝试重新连接
+      console.log('连接状态不佳，尝试重新初始化Socket连接')
+      store.dispatch('initializeSocket')
+      throw new Error('连接状态不稳定，已尝试重新连接，请稍后重试')
+    }
+
   } catch (error) {
     console.error('刷新工作汇报失败:', error)
     emit('error', error)
+
+    // 显示错误消息
+    store.dispatch('addStatusMessage', {
+      type: 'error',
+      text: error.message || '刷新工作汇报失败'
+    })
   } finally {
     isRefreshing.value = false
-    
+
     // 重置自动刷新计时器
     if (props.autoRefresh) {
       resetAutoRefreshTimer()
@@ -152,12 +219,28 @@ const stopAutoRefreshTimer = () => {
 
 // 生命周期
 onMounted(() => {
-  // 如果没有工作汇报数据，自动刷新一次
-  if (!workSummary.value) {
-    handleRefresh()
-  } else if (props.autoRefresh) {
-    startAutoRefreshTimer()
+  // 延迟一下，等待Socket连接建立
+  setTimeout(() => {
+    // 如果没有工作汇报数据，自动刷新一次
+    if (!workSummary.value) {
+      handleRefresh()
+    } else if (props.autoRefresh) {
+      startAutoRefreshTimer()
+    }
+  }, 1000) // 等待1秒让Socket连接建立
+
+  // 监听停止自动刷新事件
+  const handleStopAutoRefresh = () => {
+    console.log('收到停止自动刷新事件')
+    stopAutoRefreshTimer()
   }
+
+  window.addEventListener('stopAutoRefresh', handleStopAutoRefresh)
+
+  // 清理事件监听器
+  onUnmounted(() => {
+    window.removeEventListener('stopAutoRefresh', handleStopAutoRefresh)
+  })
 })
 
 onUnmounted(() => {
