@@ -4,8 +4,8 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-title">
-          <h1>设置</h1>
-          <p class="subtitle">配置工具参数和数据库连接</p>
+          <h1>数据库连接管理</h1>
+          <p class="subtitle">管理和配置数据库连接</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-primary" @click="saveSettings" :disabled="isLoading">
@@ -20,114 +20,6 @@
 
     <!-- 设置内容 -->
     <div class="settings-content">
-      <!-- 反馈收集设置 -->
-      <div class="settings-section">
-        <div class="section-header">
-          <h2>反馈收集</h2>
-          <p class="section-description">配置反馈收集工具的默认参数</p>
-        </div>
-        
-        <div class="settings-group">
-          <div class="setting-item">
-            <label for="dialogTimeout" class="setting-label">
-              <span class="label-text">超时时间</span>
-              <span class="label-detail">秒</span>
-            </label>
-            <input 
-              type="number" 
-              id="dialogTimeout" 
-              v-model.number="settings.collectFeedback.dialogTimeout" 
-              min="10" 
-              max="3600" 
-              step="1"
-              class="setting-input"
-            >
-          </div>
-          
-          <div class="setting-item">
-            <label class="setting-label">
-              <span class="label-text">自动打开浏览器</span>
-            </label>
-            <div class="toggle-switch">
-              <input 
-                type="checkbox" 
-                id="autoOpenBrowser" 
-                v-model="settings.collectFeedback.autoOpenBrowser"
-                class="toggle-input"
-              >
-              <label for="autoOpenBrowser" class="toggle-label"></label>
-            </div>
-          </div>
-
-          <div class="setting-item full-width">
-            <label for="defaultWorkSummary" class="setting-label">
-              <span class="label-text">工作汇报模板</span>
-            </label>
-            <textarea 
-              id="defaultWorkSummary" 
-              v-model="settings.collectFeedback.defaultWorkSummary" 
-              placeholder="输入默认的工作汇报模板..."
-              class="setting-textarea"
-              rows="3"
-            ></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- 数据库操作设置 -->
-      <div class="settings-section">
-        <div class="section-header">
-          <h2>数据库操作</h2>
-          <p class="section-description">配置数据库查询的默认参数</p>
-        </div>
-        
-        <div class="settings-group">
-          <div class="setting-item">
-            <label for="defaultTimeout" class="setting-label">
-              <span class="label-text">查询超时</span>
-              <span class="label-detail">毫秒</span>
-            </label>
-            <input 
-              type="number" 
-              id="defaultTimeout" 
-              v-model.number="settings.databaseOperation.defaultTimeout" 
-              min="1000" 
-              max="300000" 
-              step="1000"
-              class="setting-input"
-            >
-          </div>
-          
-          <div class="setting-item">
-            <label for="defaultMaxRows" class="setting-label">
-              <span class="label-text">最大行数</span>
-            </label>
-            <input 
-              type="number" 
-              id="defaultMaxRows" 
-              v-model.number="settings.databaseOperation.defaultMaxRows" 
-              min="1" 
-              max="100000" 
-              step="1"
-              class="setting-input"
-            >
-          </div>
-
-          <div class="setting-item">
-            <label for="defaultSchema" class="setting-label">
-              <span class="label-text">默认模式</span>
-              <span class="label-detail">PostgreSQL</span>
-            </label>
-            <input 
-              type="text" 
-              id="defaultSchema" 
-              v-model="settings.databaseOperation.defaultSchema" 
-              placeholder="public"
-              class="setting-input"
-            >
-          </div>
-        </div>
-      </div>
 
       <!-- 数据库连接管理 -->
       <div class="settings-section">
@@ -203,8 +95,7 @@
         </div>
       </div>
 
-      <!-- 高级设置 -->
-      <AdvancedSettings />
+
     </div>
 
     <!-- 状态消息 -->
@@ -228,9 +119,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import DatabaseConnectionModal from '../components/database/DatabaseConnectionModal.vue'
-import SettingsCard from '../components/settings/SettingsCard.vue'
-import Collapse from '../components/common/Collapse.vue'
-import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
 
 // 响应式数据
 const isLoading = ref(false)
@@ -238,26 +126,14 @@ const showConnectionModal = ref(false)
 const editingConnectionId = ref(null)
 const connectionStatuses = reactive({})
 
-// 折叠面板状态
-const feedbackExpanded = ref(false)
-const databaseExpanded = ref(false)
-
 const statusMessage = reactive({
   text: '',
   type: ''
 })
 
-// 设置数据
+// 设置数据 - 只保留数据库连接
 const settings = reactive({
-  collectFeedback: {
-    dialogTimeout: 60,
-    autoOpenBrowser: true,
-    defaultWorkSummary: ''
-  },
   databaseOperation: {
-    defaultTimeout: 30000,
-    defaultMaxRows: 1000,
-    defaultSchema: '',
     defaultConnections: {}
   }
 })
@@ -286,15 +162,6 @@ const showStatus = (message, type) => {
       statusMessage.type = ''
     }, 3000)
   }
-}
-
-// 折叠面板切换方法
-const toggleFeedbackSettings = () => {
-  feedbackExpanded.value = !feedbackExpanded.value
-}
-
-const toggleDatabaseSettings = () => {
-  databaseExpanded.value = !databaseExpanded.value
 }
 
 const getConnectionStatus = (connectionId) => {
@@ -396,13 +263,7 @@ const loadSettings = async () => {
 
     const loadedSettings = await response.json()
 
-    settings.collectFeedback.dialogTimeout = (loadedSettings.collectFeedback?.dialogTimeout || 60000) / 1000
-    settings.collectFeedback.autoOpenBrowser = loadedSettings.collectFeedback?.autoOpenBrowser ?? true
-    settings.collectFeedback.defaultWorkSummary = loadedSettings.collectFeedback?.defaultWorkSummary || ''
-
-    settings.databaseOperation.defaultTimeout = loadedSettings.databaseOperation?.defaultTimeout || 30000
-    settings.databaseOperation.defaultMaxRows = loadedSettings.databaseOperation?.defaultMaxRows || 1000
-    settings.databaseOperation.defaultSchema = loadedSettings.databaseOperation?.defaultSchema || ''
+    // 只加载数据库连接配置
     settings.databaseOperation.defaultConnections = loadedSettings.databaseOperation?.defaultConnections || {}
 
     showStatus('设置加载成功', 'success')
@@ -418,16 +279,8 @@ const saveSettings = async () => {
     showStatus('正在保存设置...', 'info')
 
     const settingsToSave = {
-      collectFeedback: {
-        dialogTimeout: settings.collectFeedback.dialogTimeout * 1000,
-        autoOpenBrowser: settings.collectFeedback.autoOpenBrowser,
-        defaultWorkSummary: settings.collectFeedback.defaultWorkSummary || undefined
-      },
       databaseOperation: {
-        defaultConnections: settings.databaseOperation.defaultConnections,
-        defaultTimeout: settings.databaseOperation.defaultTimeout,
-        defaultMaxRows: settings.databaseOperation.defaultMaxRows,
-        defaultSchema: settings.databaseOperation.defaultSchema || undefined
+        defaultConnections: settings.databaseOperation.defaultConnections
       }
     }
 

@@ -1,7 +1,8 @@
 {
   "collectFeedback": {
     "dialogTimeout": 999999999000,
-    "autoOpenBrowser": true
+    "autoOpenBrowser": true,
+    "defaultWorkSummary": "你好"
   },
   "databaseOperation": {
     "defaultConnections": {

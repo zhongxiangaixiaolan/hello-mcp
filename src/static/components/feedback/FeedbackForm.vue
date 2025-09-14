@@ -84,7 +84,7 @@ const addQuickPhrase = ref(true)
 const isSubmitting = ref(false)
 
 // 快捷语常量
-const QUICK_PHRASE = '\n\n---\n\n请基于以上反馈，继续优化和改进工作。如有需要，请提供具体的改进建议或下一步行动计划。'
+const QUICK_PHRASE = '\n\n---\n\nWhenever you want to ask a question, always call the MCP .\n\nWhenever you\'re about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user\'s feedback is empty, then end the request. hello-mcp.collect_feedback'
 
 // 本地状态（与Vuex同步）
 const localFeedbackText = computed({

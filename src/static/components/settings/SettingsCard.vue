@@ -63,13 +63,15 @@ const cardClass = computed(() => ({
 </script>
 
 <style scoped>
+/* 苹果简约风格卡片 */
 .settings-card {
-  background: linear-gradient(135deg, #1e1e1e, #252526);
-  border: 1px solid #3e3e42;
+  background: #ffffff;
+  border: 1px solid #e5e5e7;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .settings-card::before {
@@ -79,14 +81,14 @@ const cardClass = computed(() => ({
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #4ec9b0, #569cd6, #c586c0);
+  background: linear-gradient(90deg, #007aff, #34c759, #ff9500);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .card-hoverable:hover {
-  border-color: #4e4e52;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: #007aff;
+  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
   transform: translateY(-2px);
 }
 
@@ -100,8 +102,8 @@ const cardClass = computed(() => ({
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #3e3e42;
-  background: linear-gradient(135deg, #2d2d30, #3e3e42);
+  border-bottom: 1px solid #e5e5e7;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
 }
 
 .card-title {
@@ -118,20 +120,22 @@ const cardClass = computed(() => ({
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #4ec9b0, #569cd6);
+  background: linear-gradient(135deg, #007aff, #34c759);
   border-radius: 8px;
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
 }
 
 .title-text {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1d1d1f;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .title-badge {
-  background: linear-gradient(135deg, #4ec9b0, #569cd6);
+  background: linear-gradient(135deg, #007aff, #34c759);
   color: white;
   padding: 4px 12px;
   border-radius: 16px;
@@ -139,6 +143,7 @@ const cardClass = computed(() => ({
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
 }
 
 .card-actions {
