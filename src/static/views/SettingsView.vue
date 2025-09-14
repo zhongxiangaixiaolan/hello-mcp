@@ -27,32 +27,35 @@
           <h2>数据库连接</h2>
           <p class="section-description">管理数据库连接配置</p>
           <div class="section-actions">
-            <button class="btn btn-outline" @click="openConnectionModal">
+            <button class="btn btn-primary" @click="openConnectionModal">
+              <span class="btn-icon">➕</span>
               管理连接
-            </button>
-            <button class="btn btn-outline" @click="testAllConnections" :disabled="isLoading">
-              测试所有
             </button>
           </div>
         </div>
         
         <!-- 连接统计 -->
         <div class="connection-stats">
-          <div class="stat-item">
-            <span class="stat-number">{{ Object.keys(settings.databaseOperation.defaultConnections).length }}</span>
-            <span class="stat-label">已配置</span>
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+              <span class="stat-number">{{ Object.keys(settings.databaseOperation.defaultConnections).length }}</span>
+              <span class="stat-label">已配置连接</span>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ connectedCount }}</span>
-            <span class="stat-label">活跃</span>
+          <div class="stat-card">
+            <div class="stat-icon">🗄️</div>
+            <div class="stat-content">
+              <span class="stat-number">{{ mysqlCount }}</span>
+              <span class="stat-label">MySQL</span>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ mysqlCount }}</span>
-            <span class="stat-label">MySQL</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">{{ postgresCount }}</span>
-            <span class="stat-label">PostgreSQL</span>
+          <div class="stat-card">
+            <div class="stat-icon">🐘</div>
+            <div class="stat-content">
+              <span class="stat-number">{{ postgresCount }}</span>
+              <span class="stat-label">PostgreSQL</span>
+            </div>
           </div>
         </div>
         
@@ -61,37 +64,60 @@
           <div 
             v-for="(connection, connectionId) in settings.databaseOperation.defaultConnections" 
             :key="connectionId" 
-            class="connection-item"
+            class="connection-card"
             @click="editConnection(connectionId)"
           >
-            <div class="connection-info">
-              <div class="connection-name">{{ connection.id }}</div>
-              <div class="connection-details">{{ connection.host }}:{{ connection.port }}/{{ connection.database }}</div>
-            </div>
-            <div class="connection-meta">
-              <span class="connection-type">{{ connection.type.toUpperCase() }}</span>
-              <div class="connection-status">
-                <span :class="['status-indicator', getConnectionStatus(connectionId)]"></span>
+            <div class="connection-header">
+              <div class="connection-icon">
+                <span v-if="connection.type === 'mysql'">🗄️</span>
+                <span v-else-if="connection.type === 'postgresql'">🐘</span>
+                <span v-else>💾</span>
+              </div>
+              <div class="connection-info">
+                <div class="connection-name">{{ connection.id }}</div>
+                <div class="connection-type-badge">{{ connection.type.toUpperCase() }}</div>
+              </div>
+              <div class="connection-actions">
+                <button 
+                  type="button" 
+                  class="edit-button" 
+                  @click.stop="editConnection(connectionId)"
+                  title="编辑连接"
+                >
+                  ✏️
+                </button>
               </div>
             </div>
-            <button 
-              type="button" 
-              class="test-button" 
-              @click.stop="testConnection(connectionId)"
-              :disabled="isLoading"
-            >
-              测试
-            </button>
+            <div class="connection-details">
+              <div class="detail-item">
+                <span class="detail-label">主机</span>
+                <span class="detail-value">{{ connection.host }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">端口</span>
+                <span class="detail-value">{{ connection.port }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">数据库</span>
+                <span class="detail-value">{{ connection.database }}</span>
+              </div>
+            </div>
           </div>
         </div>
         
         <div v-else class="empty-state">
-          <div class="empty-icon">🔌</div>
-          <div class="empty-title">暂无数据库连接</div>
-          <div class="empty-description">添加数据库连接以开始使用数据库操作功能</div>
-          <button type="button" class="btn btn-primary" @click="openConnectionModal">
-            添加连接
-          </button>
+          <div class="empty-illustration">
+            <div class="empty-icon">🔌</div>
+            <div class="empty-circle"></div>
+          </div>
+          <div class="empty-content">
+            <div class="empty-title">暂无数据库连接</div>
+            <div class="empty-description">添加数据库连接以开始使用数据库操作功能</div>
+            <button type="button" class="btn btn-primary btn-large" @click="openConnectionModal">
+              <span class="btn-icon">➕</span>
+              添加第一个连接
+            </button>
+          </div>
         </div>
       </div>
 
@@ -111,7 +137,6 @@
       @close="closeConnectionModal"
       @save="saveConnection"
       @delete="deleteConnection"
-      @test="testConnection"
     />
   </div>
 </template>
@@ -124,7 +149,6 @@ import DatabaseConnectionModal from '../components/database/DatabaseConnectionMo
 const isLoading = ref(false)
 const showConnectionModal = ref(false)
 const editingConnectionId = ref(null)
-const connectionStatuses = reactive({})
 
 const statusMessage = reactive({
   text: '',
@@ -139,10 +163,6 @@ const settings = reactive({
 })
 
 // 计算属性
-const connectedCount = computed(() => {
-  return Object.keys(connectionStatuses).filter(id => connectionStatuses[id] === 'connected').length
-})
-
 const mysqlCount = computed(() => {
   return Object.values(settings.databaseOperation.defaultConnections).filter(conn => conn.type === 'mysql').length
 })
@@ -164,9 +184,6 @@ const showStatus = (message, type) => {
   }
 }
 
-const getConnectionStatus = (connectionId) => {
-  return connectionStatuses[connectionId] || 'unknown'
-}
 
 const openConnectionModal = () => {
   editingConnectionId.value = null
@@ -200,57 +217,10 @@ const saveConnection = (connectionData) => {
 
 const deleteConnection = (connectionId) => {
   delete settings.databaseOperation.defaultConnections[connectionId]
-  delete connectionStatuses[connectionId]
   closeConnectionModal()
   showStatus('连接已删除', 'success')
 }
 
-const testConnection = async (connectionId) => {
-  try {
-    isLoading.value = true
-    connectionStatuses[connectionId] = 'testing'
-
-    const connection = settings.databaseOperation.defaultConnections[connectionId]
-    const response = await fetch('/api/database/test', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(connection)
-    })
-
-    const result = await response.json()
-
-    if (result.success) {
-      connectionStatuses[connectionId] = 'connected'
-      showStatus(`连接 ${connectionId} 测试成功`, 'success')
-    } else {
-      connectionStatuses[connectionId] = 'error'
-      showStatus(`连接 ${connectionId} 测试失败: ${result.message}`, 'error')
-    }
-  } catch (error) {
-    connectionStatuses[connectionId] = 'error'
-    showStatus(`连接 ${connectionId} 测试失败: ${error.message}`, 'error')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const testAllConnections = async () => {
-  const connections = Object.keys(settings.databaseOperation.defaultConnections)
-  if (connections.length === 0) {
-    showStatus('没有可测试的连接', 'warning')
-    return
-  }
-
-  showStatus('正在测试所有连接...', 'info')
-
-  for (const connectionId of connections) {
-    await testConnection(connectionId)
-  }
-
-  showStatus('所有连接测试完成', 'success')
-}
 
 const loadSettings = async () => {
   try {
@@ -600,55 +570,118 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* 连接管理样式 */
+/* 按钮图标样式 */
+.btn-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 16px;
+  min-height: 44px;
+}
+
+/* 连接统计卡片样式 */
 .connection-stats {
-  display: flex;
-  gap: 24px;
-  padding: 20px 24px;
-  background: #f8f9fa;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #e5e5e7;
 }
 
-.stat-item {
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  border: 1px solid #f1f3f5;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon {
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+}
+
+.stat-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 4px;
 }
 
 .stat-number {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: #1d1d1f;
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #86868b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 .connection-list {
-  padding: 0;
+  padding: 16px 24px 24px 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
 }
 
-.connection-item {
+.connection-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e5e7;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.connection-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #007aff;
+}
+
+.connection-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #f2f2f7;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  gap: 12px;
+  padding: 20px 20px 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
-.connection-item:hover {
-  background: #f8f9fa;
-}
-
-.connection-item:last-child {
-  border-bottom: none;
+.connection-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
 }
 
 .connection-info {
@@ -656,107 +689,146 @@ onMounted(() => {
 }
 
 .connection-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #1d1d1f;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  letter-spacing: -0.2px;
 }
 
-.connection-details {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.connection-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-right: 12px;
-}
-
-.connection-type {
-  font-size: 12px;
-  color: #86868b;
-  font-weight: 500;
+.connection-type-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.connection-actions {
+  display: flex;
+  gap: 8px;
 }
 
-.status-indicator.connected {
-  background: #30d158;
-}
-
-.status-indicator.error {
-  background: #ff3b30;
-}
-
-.status-indicator.testing {
-  background: #ff9500;
-  animation: pulse 1.5s infinite;
-}
-
-.status-indicator.unknown {
-  background: #d1d1d6;
-}
-
-.test-button {
+.edit-button {
+  width: 32px;
+  height: 32px;
   background: transparent;
-  color: #007aff;
-  border: 1px solid #007aff;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
-.test-button:hover {
-  background: #007aff;
-  color: #ffffff;
+.edit-button:hover {
+  background: #f8f9fa;
+  border-color: #007aff;
 }
 
-.test-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.connection-details {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.detail-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
 
 /* 空状态样式 */
 .empty-state {
   text-align: center;
-  padding: 48px 24px;
-  color: #86868b;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.empty-illustration {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.6;
+  font-size: 64px;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.empty-circle {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(90, 200, 250, 0.1));
+  border-radius: 50%;
+  z-index: 1;
+  animation: pulse-circle 2s infinite;
+}
+
+@keyframes pulse-circle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
 }
 
 .empty-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: #1d1d1f;
-  margin-bottom: 8px;
+  margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .empty-description {
-  font-size: 14px;
-  margin-bottom: 24px;
-  line-height: 1.4;
+  font-size: 16px;
+  color: #86868b;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* 状态消息样式 */
@@ -805,88 +877,303 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
+@media (max-width: 1024px) {
+  .connection-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .connection-stats {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .settings-view {
     padding: 0;
+    background: #ffffff;
   }
 
   .page-header {
     padding: 20px 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   }
 
   .header-content {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
+    gap: 20px;
+  }
+
+  .header-title h1 {
+    font-size: 24px;
   }
 
   .header-actions {
+    justify-content: stretch;
+  }
+
+  .header-actions .btn {
+    flex: 1;
     justify-content: center;
   }
 
   .settings-content {
     padding: 16px;
-    gap: 24px;
+    gap: 20px;
   }
 
   .section-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
-    padding: 20px 16px 12px 16px;
+    gap: 16px;
+    padding: 20px 16px 16px 16px;
   }
 
   .section-actions {
+    justify-content: stretch;
+  }
+
+  .section-actions .btn {
+    flex: 1;
     justify-content: center;
   }
 
-  .settings-group {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .setting-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 12px 0;
-  }
-
   .connection-stats {
-    flex-wrap: wrap;
-    gap: 16px;
+    grid-template-columns: 1fr;
     padding: 16px;
-  }
-
-  .connection-item {
-    flex-direction: column;
-    align-items: stretch;
     gap: 12px;
+  }
+
+  .stat-card {
     padding: 16px;
   }
 
-  .connection-meta {
-    justify-content: space-between;
-    margin-right: 0;
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
   }
 
-  .test-button {
-    align-self: flex-end;
+  .stat-number {
+    font-size: 20px;
+  }
+
+  .connection-list {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .connection-card {
+    border-radius: 12px;
+  }
+
+  .connection-header {
+    padding: 16px 16px 12px 16px;
+  }
+
+  .connection-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .connection-name {
+    font-size: 15px;
+  }
+
+  .connection-details {
+    padding: 0 16px 16px 16px;
+    gap: 8px;
+  }
+
+  .detail-item {
+    padding: 6px 10px;
+  }
+
+  .detail-label {
+    font-size: 11px;
+  }
+
+  .detail-value {
+    font-size: 13px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+    gap: 20px;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+  }
+
+  .empty-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .empty-title {
+    font-size: 20px;
+  }
+
+  .empty-description {
+    font-size: 15px;
   }
 
   .status-message {
     margin: 12px 16px;
+    padding: 10px 14px;
+    font-size: 13px;
   }
 }
 
 @media (max-width: 480px) {
-  .connection-stats {
-    grid-template-columns: repeat(2, 1fr);
-    display: grid;
+  .header-title h1 {
+    font-size: 22px;
   }
 
-  .stat-item {
-    text-align: center;
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .connection-stats {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .stat-number {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .connection-list {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .connection-header {
+    padding: 12px 12px 8px 12px;
+    gap: 8px;
+  }
+
+  .connection-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .connection-name {
+    font-size: 14px;
+  }
+
+  .connection-type-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .edit-button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .connection-details {
+    padding: 0 12px 12px 12px;
+  }
+
+  .empty-state {
+    padding: 32px 12px;
+  }
+
+  .empty-icon {
+    font-size: 40px;
+  }
+
+  .empty-circle {
+    width: 80px;
+    height: 80px;
+  }
+
+  .empty-title {
+    font-size: 18px;
+  }
+
+  .empty-description {
+    font-size: 14px;
+  }
+
+  .btn-large {
+    padding: 10px 20px;
+    font-size: 15px;
+    min-height: 40px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .settings-view {
+    background: #1e1e1e;
+    color: #ffffff;
+  }
+
+  .page-header {
+    background: #2d2d30;
+    border-bottom-color: #3e3e42;
+  }
+
+  .settings-section {
+    background: #252526;
+    border-color: #3e3e42;
+  }
+
+  .section-header {
+    background: #2d2d30;
+    border-bottom-color: #3e3e42;
+  }
+
+  .connection-stats {
+    background: linear-gradient(135deg, #2d2d30 0%, #252526 100%);
+  }
+
+  .stat-card {
+    background: #1e1e1e;
+    border-color: #3e3e42;
+  }
+
+  .connection-card {
+    background: #1e1e1e;
+    border-color: #3e3e42;
+  }
+
+  .connection-card:hover {
+    border-color: #007acc;
+  }
+
+  .connection-header {
+    background: linear-gradient(135deg, #2d2d30 0%, #1e1e1e 100%);
+  }
+
+  .detail-item {
+    background: #2d2d30;
+  }
+
+  .empty-circle {
+    background: linear-gradient(135deg, rgba(0, 122, 204, 0.1), rgba(90, 200, 250, 0.1));
   }
 }
 
